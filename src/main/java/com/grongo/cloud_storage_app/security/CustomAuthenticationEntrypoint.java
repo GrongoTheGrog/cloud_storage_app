@@ -2,11 +2,10 @@ package com.grongo.cloud_storage_app.security;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grongo.cloud_storage_app.models.dto.ExceptionResponse;
+import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;

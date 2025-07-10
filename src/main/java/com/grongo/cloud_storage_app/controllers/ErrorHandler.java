@@ -1,18 +1,16 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
-import com.grongo.cloud_storage_app.exceptions.InvalidTokenException;
-import com.grongo.cloud_storage_app.exceptions.MissingTokenException;
-import com.grongo.cloud_storage_app.exceptions.TokenException;
-import com.grongo.cloud_storage_app.exceptions.TokenUserNotFoundException;
-import com.grongo.cloud_storage_app.models.dto.ExceptionResponse;
+import com.grongo.cloud_storage_app.exceptions.tokenExceptions.InvalidTokenException;
+import com.grongo.cloud_storage_app.exceptions.tokenExceptions.MissingTokenException;
+import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenUserNotFoundException;
+import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.naming.AuthenticationException;
-import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 
 @RestControllerAdvice

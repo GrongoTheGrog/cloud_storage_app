@@ -1,4 +1,4 @@
-package com.grongo.cloud_storage_app.models.dto;
+package com.grongo.cloud_storage_app.models.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

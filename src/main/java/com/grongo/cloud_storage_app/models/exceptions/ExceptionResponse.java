@@ -1,10 +1,9 @@
-package com.grongo.cloud_storage_app.models.dto;
+package com.grongo.cloud_storage_app.models.exceptions;
 
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Date;
 

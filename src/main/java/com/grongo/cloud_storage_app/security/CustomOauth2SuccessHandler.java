@@ -2,15 +2,12 @@ package com.grongo.cloud_storage_app.security;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grongo.cloud_storage_app.models.User;
-import com.grongo.cloud_storage_app.models.dto.AccessTokenResponse;
-import com.grongo.cloud_storage_app.models.dto.RequestUser;
-import com.grongo.cloud_storage_app.models.dto.UserDto;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.AuthService;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
-import com.grongo.cloud_storage_app.services.user.UserService;
-import jakarta.servlet.FilterChain;
+import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
+import com.grongo.cloud_storage_app.models.user.dto.RequestUser;
+import com.grongo.cloud_storage_app.models.user.dto.UserDto;
+import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
+import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
+import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,16 +15,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.client.OAuth2AuthorizationSuccessHandler;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
 
 //  That custom Oauth2 success handler lies at the end of the oauth login lifecycle.
 //
@@ -36,10 +28,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler {
 
-    private final AuthService authService;
-    private final JwtService jwtService;
+    private final AuthServiceImpl authService;
+    private final JwtServiceImpl jwtService;
     private final ModelMapper modelMapper;
-    private final UserService userService;
+    private final UserServiceImpl userService;
 
     @Override
     public void onAuthenticationSuccess(

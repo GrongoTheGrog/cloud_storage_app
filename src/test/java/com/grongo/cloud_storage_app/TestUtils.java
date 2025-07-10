@@ -2,9 +2,7 @@ package com.grongo.cloud_storage_app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grongo.cloud_storage_app.models.JwtRefresh;
-import com.grongo.cloud_storage_app.models.dto.RequestUser;
-import jakarta.servlet.http.Cookie;
+import com.grongo.cloud_storage_app.models.user.dto.RequestUser;
 import org.springframework.stereotype.Component;
 
 @Component

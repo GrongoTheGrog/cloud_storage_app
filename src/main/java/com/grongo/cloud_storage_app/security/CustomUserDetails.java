@@ -1,6 +1,6 @@
 package com.grongo.cloud_storage_app.security;
 
-import com.grongo.cloud_storage_app.models.User;
+import com.grongo.cloud_storage_app.models.user.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -31,6 +31,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getUsername();
+        return user.getEmail();
     }
 }

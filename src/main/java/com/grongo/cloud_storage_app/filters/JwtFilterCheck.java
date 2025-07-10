@@ -1,12 +1,11 @@
 package com.grongo.cloud_storage_app.filters;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grongo.cloud_storage_app.exceptions.InvalidTokenException;
-import com.grongo.cloud_storage_app.exceptions.MissingTokenException;
-import com.grongo.cloud_storage_app.models.dto.ExceptionResponse;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
+import com.grongo.cloud_storage_app.exceptions.tokenExceptions.InvalidTokenException;
+import com.grongo.cloud_storage_app.exceptions.tokenExceptions.MissingTokenException;
+import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
+import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -18,20 +17,18 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 
 @Component
 @RequiredArgsConstructor
 public class JwtFilterCheck extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private final JwtServiceImpl jwtService;
 
     @Override
     protected void doFilterInternal(

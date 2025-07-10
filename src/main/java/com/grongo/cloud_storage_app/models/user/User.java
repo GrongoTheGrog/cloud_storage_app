@@ -1,6 +1,7 @@
-package com.grongo.cloud_storage_app.models;
+package com.grongo.cloud_storage_app.models.user;
 
 
+import com.grongo.cloud_storage_app.models.TimeStamps;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,7 +16,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User extends TimeStamps{
+public class User extends TimeStamps {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

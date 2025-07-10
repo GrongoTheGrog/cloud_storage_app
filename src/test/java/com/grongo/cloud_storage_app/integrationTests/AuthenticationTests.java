@@ -3,8 +3,8 @@ package com.grongo.cloud_storage_app.integrationTests;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.TestUtils;
-import com.grongo.cloud_storage_app.models.User;
-import com.grongo.cloud_storage_app.models.dto.AccessTokenResponse;
+import com.grongo.cloud_storage_app.models.user.User;
+import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.repositories.RefreshRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import jakarta.servlet.http.Cookie;
