@@ -32,5 +32,6 @@ public class Item extends TimeStamps {
     @ManyToOne
     @JoinColumn(name = "folder_id")
     private Folder folder;
+    private String path;
 
 }

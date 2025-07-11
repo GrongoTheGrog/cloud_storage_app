@@ -33,10 +33,12 @@ public class SecurityConfig {
             CustomAuthenticationEntrypoint authenticationEntrypoint,
             JwtFilterCheck jwtFilterCheck,
             CustomOauth2SuccessHandler successHandler,
+            AuthenticationManager authenticationManager,
             CustomUserDetailsService userDetailsService
     ) throws Exception {
         security
                 .csrf(AbstractHttpConfigurer::disable)
+                .authenticationManager(authenticationManager)
                 .userDetailsService(userDetailsService)
                 .authorizeHttpRequests(customizer -> {
             customizer
@@ -65,8 +67,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(
+            PasswordEncoder passwordEncoder,
+            CustomUserDetailsService userDetailsService
+    ) throws Exception {
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(authenticationProvider);
     }
 }

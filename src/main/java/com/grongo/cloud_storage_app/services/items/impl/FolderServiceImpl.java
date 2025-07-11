@@ -12,6 +12,7 @@ import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.security.CustomUserDetails;
 import com.grongo.cloud_storage_app.services.items.FolderService;
+import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
@@ -30,6 +31,7 @@ public class FolderServiceImpl implements FolderService {
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
+    private final StorageService storageService;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -37,7 +39,9 @@ public class FolderServiceImpl implements FolderService {
         Long parentFolderId = folderRequest.getParentFolderId();
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = ((CustomUserDetails) authentication.getPrincipal()).getUser();
+        User user = userRepository
+                .findByEmail((String) authentication.getPrincipal())
+                .orElseThrow(() -> new UserNotFoundException("User authenticated does not exist."));
 
         Folder parentFolder = null;
 
@@ -45,7 +49,7 @@ public class FolderServiceImpl implements FolderService {
             parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id " + parentFolderId));
         }
 
-        List<Item> items = getItemsInFolder(parentFolderId, user.getId());
+        List<Item> items = storageService.getItemsInFolder(parentFolderId, user.getId());
 
         //throw if any conflict with the names
         items.forEach(item -> {
@@ -58,19 +62,16 @@ public class FolderServiceImpl implements FolderService {
 
         folderRepository.save(folder);
 
+        storageService.updatePath(folder);
+
         return modelMapper.map(folder, FolderDto.class);
 
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Item> getItemsInFolder(Long id, Long userId) {
-        if (id == null){
-            return itemRepository.findAllRootItems(userId);
-        }
-
-        Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
-
-        return folder.getStoredFiles();
+    public Optional<FolderDto> findFolderById(Long id) {
+        Optional<Folder> folder = folderRepository.findById(id);
+        return folder.map(folderMapped -> modelMapper.map(folderMapped, FolderDto.class));
     }
 }

@@ -19,6 +19,7 @@ public class FolderDto {
     private String name;
     private FolderDto folder;
     private UserDto owner;
+    private String path;
     private Date createdAt;
     private Date updatedAt;
 }
