@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
 
+import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundException;
@@ -11,6 +12,7 @@ import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class StorageServiceImpl implements StorageService {
     final private ItemRepository itemRepository;
     final private FolderRepository folderRepository;
     final private UserRepository userRepository;
+    final private AuthService authService;
 
     @Override
     public void updatePath(Long itemId) {
@@ -82,16 +85,24 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public void moveItem(Long itemId, Long newParentId) {
+        User user = authService.getCurrentAuthenticatedUser();
+
         Item foundItem = itemRepository
                 .findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
-        Folder folder = folderRepository
-                .findById(newParentId)
-                .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
+        if (!user.getId().equals(foundItem.getOwner().getId())) throw new AccessDeniedException("Authenticated user is not the owner of the item.");
 
-        foundItem.setFolder(folder);
-        updatePath(foundItem);
+        Folder folder = null;
+        if (newParentId != null){
+            folder = folderRepository
+                    .findById(newParentId)
+                    .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
+
+            foundItem.setFolder(folder);
+            updatePath(foundItem);
+        }
+
 
     }
 
@@ -102,10 +113,9 @@ public class StorageServiceImpl implements StorageService {
                 .orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
         Long parentFolderId = foundItem.getFolder() == null ? null : foundItem.getFolder().getId();
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userRepository
-                .findByEmail((String) authentication.getPrincipal())
-                .orElseThrow(() -> new UserNotFoundException("User authenticated does not exist."));
+        User user = authService.getCurrentAuthenticatedUser();
+
+        if (!user.getId().equals(foundItem.getOwner().getId())) throw new AccessDeniedException("Authenticated user is not the owner of the file.");
 
         List<Item> itemList = getItemsInFolder(parentFolderId, user.getId());
 
@@ -129,5 +139,11 @@ public class StorageServiceImpl implements StorageService {
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
 
         return folder.getStoredFiles();
+    }
+
+    @Override
+    public boolean checkNameConflict(Long folderId, Long userId, String itemName) {
+        List<Item> itemList = getItemsInFolder(folderId, userId);
+        return itemList.stream().anyMatch(item -> item.getName().equals(itemName));
     }
 }

@@ -1,14 +1,17 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
+import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.InvalidTokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.MissingTokenException;
+import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenUserNotFoundException;
 import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
 
 import javax.naming.AuthenticationException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -17,52 +20,63 @@ import java.sql.SQLIntegrityConstraintViolationException;
 public class ErrorHandler {
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(AuthenticationException.class)
-    public ExceptionResponse authenticationException(AuthenticationException e){
+    @ExceptionHandler({
+            AuthenticationException.class,
+            InvalidTokenException.class,
+            TokenNotFoundException.class,
+            MissingTokenException.class
+    })
+    public ExceptionResponse unauthorized(RuntimeException e){
         return new ExceptionResponse(
-                401,
-                e.getMessage(),
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.name(),
                 e.getMessage()
         );
     }
 
     @ResponseStatus(HttpStatus.CONFLICT)
-    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
-    public ExceptionResponse authenticationException(SQLIntegrityConstraintViolationException e){
+    @ExceptionHandler({
+            SQLIntegrityConstraintViolationException.class,
+            ConflictStorageException.class
+    })
+    public ExceptionResponse conflict(RuntimeException e){
         return new ExceptionResponse(
-                409,
-                "Conflict in database.",
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.name(),
                 e.getMessage()
         );
     }
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(InvalidTokenException.class)
-    public ExceptionResponse authenticationException(InvalidTokenException e){
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler({
+            AmazonException.class,
+            FileTypeException.class,
+            StorageException.class
+    })
+    public ExceptionResponse serverError(RuntimeException e){
         return new ExceptionResponse(
-                401,
-                "Invalid token.",
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.name(),
                 e.getMessage()
         );
     }
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(TokenUserNotFoundException.class)
-    public ExceptionResponse authenticationException(TokenUserNotFoundException e){
+
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler({
+            FileNotFoundException.class,
+            FolderNotFoundException.class,
+            ItemNotFoundException.class
+    })
+    public ExceptionResponse notFound(RuntimeException e){
         return new ExceptionResponse(
-                401,
-                "User not found with provided token.",
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.name(),
                 e.getMessage()
         );
     }
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(MissingTokenException.class)
-    public ExceptionResponse missingTokenException(MissingTokenException e){
-        return new ExceptionResponse(
-                401,
-                "Missing token.",
-                e.getMessage()
-        );
-    }
+
+
+
 }

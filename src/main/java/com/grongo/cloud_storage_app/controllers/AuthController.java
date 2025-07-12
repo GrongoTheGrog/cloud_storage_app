@@ -4,7 +4,8 @@ package com.grongo.cloud_storage_app.controllers;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
-import com.grongo.cloud_storage_app.models.user.dto.RequestUser;
+import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
+import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
 import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
@@ -32,9 +33,9 @@ public class AuthController {
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
     public String signup(
-            @RequestBody RequestUser requestUser
+            @RequestBody RegisterUser registerUser
     ){
-        UserDto userDto = authService.createUserCredentials(requestUser);
+        UserDto userDto = authService.createUserCredentials(registerUser);
         return "User " + userDto.getId() + " created successfully.";
     }
 
@@ -42,12 +43,12 @@ public class AuthController {
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<AccessTokenResponse> login(
-            @RequestBody RequestUser requestUser,
+            @RequestBody AuthenticateUser authenticateUser,
             @CookieValue(name = "rt_session_id", required = false) Cookie refreshTokenCookieRequest,
             HttpServletRequest request,
             HttpServletResponse response
             ){
-        UserDto userDto = authService.authenticateUserCredentials(requestUser);
+        UserDto userDto = authService.authenticateUserCredentials(authenticateUser);
 
         if (refreshTokenCookieRequest != null){
             jwtService.deleteRefreshToken(refreshTokenCookieRequest);

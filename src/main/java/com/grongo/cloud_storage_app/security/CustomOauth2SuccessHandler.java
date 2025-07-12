@@ -3,7 +3,7 @@ package com.grongo.cloud_storage_app.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
-import com.grongo.cloud_storage_app.models.user.dto.RequestUser;
+import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
 import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
@@ -45,13 +45,13 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
         String email = auth2User.getAttribute("email");
         String picture = auth2User.getAttribute("picture");
 
-        RequestUser requestUser = RequestUser.builder()
+        RegisterUser registerUser = RegisterUser.builder()
                 .username(username)
                 .email(email)
                 .picture(picture)
                 .build();
 
-        UserDto userDto = userService.findByEmail(email).orElseGet(() -> authService.createUserCredentials(requestUser));
+        UserDto userDto = userService.findByEmail(email).orElseGet(() -> authService.createUserCredentials(registerUser));
 
         AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), email);
         Cookie refreshTokenSessionCookie = jwtService.getRefreshTokenCookie(userDto.getId(), email, userDto);

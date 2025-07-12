@@ -1,5 +1,6 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
+import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.items.Folder;
@@ -11,6 +12,7 @@ import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.security.CustomUserDetails;
+import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class FolderServiceImpl implements FolderService {
     private final UserRepository userRepository;
     private final ItemRepository itemRepository;
     private final StorageService storageService;
+    private final AuthService authService;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -39,9 +42,7 @@ public class FolderServiceImpl implements FolderService {
         Long parentFolderId = folderRequest.getParentFolderId();
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userRepository
-                .findByEmail((String) authentication.getPrincipal())
-                .orElseThrow(() -> new UserNotFoundException("User authenticated does not exist."));
+        User user = authService.getCurrentAuthenticatedUser();
 
         Folder parentFolder = null;
 
@@ -49,14 +50,9 @@ public class FolderServiceImpl implements FolderService {
             parentFolder = folderRepository.findById(parentFolderId).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id " + parentFolderId));
         }
 
-        List<Item> items = storageService.getItemsInFolder(parentFolderId, user.getId());
-
-        //throw if any conflict with the names
-        items.forEach(item -> {
-            if (item.getName().equals(folderRequest.getName())){
-                throw new FolderNotFoundException("There is already a folder or file named " + folderRequest.getName());
-            }
-        });
+        if (storageService.checkNameConflict(parentFolderId, user.getId(), folderRequest.getName())){
+            throw new ConflictStorageException("There is already a folder or file named " + folderRequest.getName());
+        }
 
         Folder folder = Folder.builder().name(folderRequest.getName()).folder(parentFolder).owner(user).build();
 
