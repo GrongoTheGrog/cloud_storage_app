@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
+import com.grongo.cloud_storage_app.exceptions.HttpException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.InvalidTokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.MissingTokenException;
@@ -19,64 +20,13 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler({
-            AuthenticationException.class,
-            InvalidTokenException.class,
-            TokenNotFoundException.class,
-            MissingTokenException.class
-    })
-    public ExceptionResponse unauthorized(RuntimeException e){
+    @ExceptionHandler(HttpException.class)
+    public ExceptionResponse unauthorized(HttpException e){
         return new ExceptionResponse(
-                HttpStatus.UNAUTHORIZED.value(),
-                HttpStatus.UNAUTHORIZED.name(),
+                e.getStatus().value(),
+                e.getStatus().name(),
                 e.getMessage()
         );
     }
-
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @ExceptionHandler({
-            SQLIntegrityConstraintViolationException.class,
-            ConflictStorageException.class
-    })
-    public ExceptionResponse conflict(RuntimeException e){
-        return new ExceptionResponse(
-                HttpStatus.CONFLICT.value(),
-                HttpStatus.CONFLICT.name(),
-                e.getMessage()
-        );
-    }
-
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler({
-            AmazonException.class,
-            FileTypeException.class,
-            StorageException.class
-    })
-    public ExceptionResponse serverError(RuntimeException e){
-        return new ExceptionResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                HttpStatus.INTERNAL_SERVER_ERROR.name(),
-                e.getMessage()
-        );
-    }
-
-
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler({
-            FileNotFoundException.class,
-            FolderNotFoundException.class,
-            ItemNotFoundException.class
-    })
-    public ExceptionResponse notFound(RuntimeException e){
-        return new ExceptionResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.name(),
-                e.getMessage()
-        );
-    }
-
-
-
 
 }
