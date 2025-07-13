@@ -18,8 +18,8 @@ import java.util.Date;
 @NoArgsConstructor
 public abstract class TimeStamps {
 
-    Date created_at;
-    Date updated_at;
+    private Date created_at;
+    private Date updated_at;
 
     @PrePersist
     public void prePersist(){

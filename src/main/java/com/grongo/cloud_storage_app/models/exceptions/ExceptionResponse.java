@@ -15,7 +15,7 @@ public class ExceptionResponse {
     public ExceptionResponse(
             int status,
             String error,
-            String message,
+            String message
     ){
         this.message = message;
         this.status = status;

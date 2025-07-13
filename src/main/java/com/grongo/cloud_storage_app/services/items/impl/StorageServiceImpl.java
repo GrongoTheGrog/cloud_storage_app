@@ -43,17 +43,26 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public void updatePath(Item item){
-        List<String> path = new ArrayList<>();
-        Folder current = item.getFolder();
-        while (current != null){
-            String currentLocation = "/" + current.getName();
-            path.add(currentLocation);
-            current = current.getFolder();
+        Folder parentFolder = item.getFolder();
+//        List<String> path = new ArrayList<>();
+//        while (current != null){
+//            String currentLocation = "/" + current.getName();
+//            path.add(currentLocation);
+//            current = current.getFolder();
+//        }
+//
+//        path = path.reversed();
+//        path.add("/" + item.getName());
+//        item.setPath(String.join("", path));
+
+        String path = "";
+
+        if (parentFolder != null){
+            path = parentFolder.getPath();
         }
 
-        path = path.reversed();
-        path.add("/" + item.getName());
-        item.setPath(String.join("", path));
+        path += "/" + item.getName();
+
         itemRepository.save(item);
 
 
@@ -99,6 +108,9 @@ public class StorageServiceImpl implements StorageService {
                     .findById(newParentId)
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
 
+            if (checkNameConflict(folder.getId(), user.getId(), foundItem.getName())){
+                throw new ConflictStorageException("There is already a file named " + foundItem.getName() + " in the given directory.");
+            }
             foundItem.setFolder(folder);
             updatePath(foundItem);
         }

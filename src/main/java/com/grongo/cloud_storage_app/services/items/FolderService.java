@@ -3,7 +3,10 @@ package com.grongo.cloud_storage_app.services.items;
 
 import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
 import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FolderService {
@@ -25,4 +28,14 @@ public interface FolderService {
      * @return An optional of a FolderDto
      */
     Optional<FolderDto> findFolderById(Long id);
+
+
+    /**
+     *
+     * Looks for all items in a given folder
+     * @param id the folder id to look into
+     * @return a list of items
+     * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException if folder can't be found with given id
+     */
+    List<ItemDto> openFolder(Long id);
 }

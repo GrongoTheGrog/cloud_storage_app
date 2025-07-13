@@ -30,7 +30,7 @@ public class FileController {
         return String.format("File %s uploaded on path %s.", fileDto.getName(), fileDto.getPath());
     }
 
-    @GetMapping("/upload/{id}")
+    @GetMapping("/download/{id}")
     @ResponseStatus(HttpStatus.OK)
     public String handleFileDownload(
             @PathVariable Long id

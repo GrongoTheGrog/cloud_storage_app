@@ -9,6 +9,7 @@ import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundExce
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenUserNotFoundException;
 import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -29,4 +30,15 @@ public class ErrorHandler {
         );
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ExceptionResponse> handleOtherExceptions(Exception e) {
+        e.printStackTrace(); // or use a logger
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ExceptionResponse(
+                        500,
+                        "INTERNAL_SERVER_ERROR",
+                        e.getMessage()
+                ));
+    }
 }

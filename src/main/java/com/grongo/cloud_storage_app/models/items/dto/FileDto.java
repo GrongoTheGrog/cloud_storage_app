@@ -1,24 +1,16 @@
 package com.grongo.cloud_storage_app.models.items.dto;
 
 
-import com.grongo.cloud_storage_app.models.items.Folder;
-import com.grongo.cloud_storage_app.models.user.User;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class FileDto {
-    private Long id;
-    private String name;
-    private User owner;
-    private Folder folder;
-    private String path;
+@SuperBuilder
+public class FileDto extends ItemDto{
     private Long size;
     private String fileType;
 }

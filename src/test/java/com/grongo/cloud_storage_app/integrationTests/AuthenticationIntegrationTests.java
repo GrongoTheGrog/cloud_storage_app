@@ -2,7 +2,7 @@ package com.grongo.cloud_storage_app.integrationTests;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grongo.cloud_storage_app.TestUtils;
+import com.grongo.cloud_storage_app.testUtils.TestUtils;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.repositories.RefreshRepository;
@@ -20,12 +20,12 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import static org.assertj.core.api.Assertions.*;
 import java.util.Optional;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
+import static com.grongo.cloud_storage_app.testUtils.TestUtils.*;
 
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
-public class AuthenticationTests {
+public class AuthenticationIntegrationTests {
 
     @Autowired
     private UserRepository userRepository;
@@ -36,14 +36,11 @@ public class AuthenticationTests {
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
-    private TestUtils testUtils;
-
     ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     public void testIfUserIsCreatedOnSignup() throws Exception {
-        String requestUserJson = testUtils.getRequestUserJson();
+        String requestUserJson = getRequestUserJson();
 
         mockMvc.perform(MockMvcRequestBuilders
                 .post("/api/auth/signup")
@@ -58,7 +55,7 @@ public class AuthenticationTests {
 
     @Test
     public void testIfUserCanBeAuthenticated() throws Exception {
-        String requestUserJson = testUtils.getRequestUserJson();
+        String requestUserJson = getRequestUserJson();
 
         mockMvc.perform(MockMvcRequestBuilders
                 .post("/api/auth/login")
@@ -73,7 +70,7 @@ public class AuthenticationTests {
     @Test
     public void testIfRefreshEndpointReturnsAnAccessToken() throws Exception {
 
-        String requestUserJson = testUtils.getRequestUserJson();
+        String requestUserJson = getRequestUserJson();
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/auth/login")
@@ -98,7 +95,7 @@ public class AuthenticationTests {
 
     @Test
     public void testIfUserCanLogOut() throws Exception {
-        String requestUserJson = testUtils.getRequestUserJson();
+        String requestUserJson = getRequestUserJson();
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/auth/login")
@@ -120,7 +117,7 @@ public class AuthenticationTests {
 
     @Test
     public void testIfJwtAllowAccessWithJwt() throws Exception {
-        String requestUserJson = testUtils.getRequestUserJson();
+        String requestUserJson = getRequestUserJson();
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                         .post("/api/auth/login")
