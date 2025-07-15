@@ -1,6 +1,8 @@
 package com.grongo.cloud_storage_app.services.items;
 
+import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.user.User;
 
 import java.util.List;
 
@@ -61,4 +63,20 @@ public interface StorageService {
      * @return a boolean representing whether there is a conflict (true) or not (false)
      */
     boolean checkNameConflict(Long folderId, Long userId, String itemName);
+
+    /**
+     * checks if the first folder is the ancestor of second folder
+     * @param ancestor
+     * @param child
+     * @return
+     */
+    boolean checkIfFolderIsAncestor(Folder ancestor, Folder child);
+
+    /**
+     * Takes an item and a user, then throw if user is not the owner
+     * @param item the item to check
+     * @param user the user to check
+     * @throws com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException if user is not the owner
+     */
+    void checkItemPermission(Item item, User user);
 }

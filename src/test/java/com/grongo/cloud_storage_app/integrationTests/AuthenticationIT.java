@@ -2,14 +2,12 @@ package com.grongo.cloud_storage_app.integrationTests;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.grongo.cloud_storage_app.testUtils.TestUtils;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.repositories.RefreshRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,7 +16,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.*;
 import java.util.Optional;
@@ -28,7 +25,7 @@ import static com.grongo.cloud_storage_app.testUtils.TestUtils.*;
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @SpringBootTest
-public class AuthenticationIntegrationTests {
+public class AuthenticationIT {
 
     @Autowired
     private UserRepository userRepository;

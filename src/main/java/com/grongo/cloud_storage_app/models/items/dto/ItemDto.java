@@ -21,7 +21,7 @@ public class ItemDto {
     private Long id;
     private String name;
     private User owner;
-    private Folder folder;
+    private FolderDto folder;
     private String path;
     private String type;
     private Date created_at;

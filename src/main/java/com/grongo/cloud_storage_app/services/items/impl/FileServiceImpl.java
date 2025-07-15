@@ -120,7 +120,6 @@ public class FileServiceImpl implements FileService {
             );
 
             Files.deleteIfExists(streamPath);
-            Files.deleteIfExists(streamPath);
 
             return modelMapper.map(file, FileDto.class);
 
@@ -142,9 +141,8 @@ public class FileServiceImpl implements FileService {
                 .findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("Could not find file with id of " + fileId));
 
-        if (!Objects.equals(user.getId(), file.getOwner().getId())) throw new AccessDeniedException("Authenticated user is not the owner of the given file.");
+        storageService.checkItemPermission(file, user);
 
-        //PUT THE SHARING LOGIC LATER
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -177,9 +175,7 @@ public class FileServiceImpl implements FileService {
     public void deleteFile(File file){
         User user = authService.getCurrentAuthenticatedUser();
 
-        if (!Objects.equals(user.getId(), file.getOwner().getId())) throw new AccessDeniedException("Authenticated user is not the owner of the given file.");
-
-        //PUT THE SHARING LOGIC LATER
+        storageService.checkItemPermission(file, user);
 
         fileRepository.deleteById(file.getId());
 

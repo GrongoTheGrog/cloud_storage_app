@@ -5,7 +5,7 @@ import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundException;
-import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
+import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageException;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.user.User;
@@ -13,11 +13,9 @@ import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
-import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,16 +42,6 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public void updatePath(Item item){
         Folder parentFolder = item.getFolder();
-//        List<String> path = new ArrayList<>();
-//        while (current != null){
-//            String currentLocation = "/" + current.getName();
-//            path.add(currentLocation);
-//            current = current.getFolder();
-//        }
-//
-//        path = path.reversed();
-//        path.add("/" + item.getName());
-//        item.setPath(String.join("", path));
 
         String path = "";
 
@@ -100,22 +88,28 @@ public class StorageServiceImpl implements StorageService {
                 .findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
-        if (!user.getId().equals(foundItem.getOwner().getId())) throw new AccessDeniedException("Authenticated user is not the owner of the item.");
-
-        Folder folder = null;
+        Folder parentFolder = null;
         if (newParentId != null){
-            folder = folderRepository
+            parentFolder = folderRepository
                     .findById(newParentId)
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
 
-            if (checkNameConflict(folder.getId(), user.getId(), foundItem.getName())){
-                throw new ConflictStorageException("There is already a file named " + foundItem.getName() + " in the given directory.");
-            }
-            foundItem.setFolder(folder);
-            updatePath(foundItem);
+            checkItemPermission(parentFolder, user);
         }
 
+        checkItemPermission(foundItem, user);
 
+        //In case the resource is a folder, check if the new parent is not one of its subfolders
+        if (foundItem.getType().equals("FOLDER") && checkIfFolderIsAncestor((Folder) foundItem, parentFolder)){
+            throw new StorageException("You can't move a folder to one of it's children folders.", HttpStatus.CONFLICT);
+        }
+
+        if (checkNameConflict(parentFolder == null ? null : parentFolder.getId(), user.getId(), foundItem.getName())){
+            throw new ConflictStorageException("There is already a file named " + foundItem.getName() + " in the given directory.");
+        }
+
+        foundItem.setFolder(parentFolder);
+        updatePath(foundItem);
     }
 
     @Override
@@ -127,7 +121,7 @@ public class StorageServiceImpl implements StorageService {
         Long parentFolderId = foundItem.getFolder() == null ? null : foundItem.getFolder().getId();
         User user = authService.getCurrentAuthenticatedUser();
 
-        if (!user.getId().equals(foundItem.getOwner().getId())) throw new AccessDeniedException("Authenticated user is not the owner of the file.");
+        checkItemPermission(foundItem, user);
 
         List<Item> itemList = getItemsInFolder(parentFolderId, user.getId());
 
@@ -148,7 +142,10 @@ public class StorageServiceImpl implements StorageService {
             return itemRepository.findAllRootItems(userId);
         }
 
+        User user = authService.getCurrentAuthenticatedUser();
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
+
+        checkItemPermission(folder, user);
 
         return folder.getStoredFiles();
     }
@@ -158,4 +155,24 @@ public class StorageServiceImpl implements StorageService {
         List<Item> itemList = getItemsInFolder(folderId, userId);
         return itemList.stream().anyMatch(item -> item.getName().equals(itemName));
     }
+
+    @Override
+    public boolean checkIfFolderIsAncestor(Folder ancestor, Folder child) {
+        Folder current = child;
+
+        while (current != null){
+            if (Objects.equals(ancestor.getId(), current.getId())) return true;
+            current = current.getFolder();
+        }
+        return false;
+    }
+
+    @Override
+    public void checkItemPermission(Item item, User user) {
+        if (!user.getId().equals(item.getOwner().getId())) {
+            throw new AccessDeniedException("Authenticated user is not the owner of the item.");
+        }
+    }
+
+
 }

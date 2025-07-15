@@ -24,7 +24,7 @@ public class FolderController {
     private final FolderService folderService;
     private final StorageService storageService;
 
-    @PostMapping(consumes = "application/json")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public String handleFolderCreation(
             @RequestBody FolderRequest folderRequest

@@ -22,23 +22,17 @@ import java.sql.SQLIntegrityConstraintViolationException;
 public class ErrorHandler {
 
     @ExceptionHandler(HttpException.class)
-    public ExceptionResponse unauthorized(HttpException e){
-        return new ExceptionResponse(
+    public ResponseEntity<ExceptionResponse> unauthorized(HttpException e){
+
+        ExceptionResponse exceptionResponse = new ExceptionResponse(
                 e.getStatus().value(),
                 e.getStatus().name(),
                 e.getMessage()
         );
-    }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ExceptionResponse> handleOtherExceptions(Exception e) {
-        e.printStackTrace(); // or use a logger
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ExceptionResponse(
-                        500,
-                        "INTERNAL_SERVER_ERROR",
-                        e.getMessage()
-                ));
+                .status(e.getStatus())
+                .body(exceptionResponse);
+
     }
 }
