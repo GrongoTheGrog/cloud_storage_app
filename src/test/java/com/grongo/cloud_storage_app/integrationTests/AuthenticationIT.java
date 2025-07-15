@@ -4,8 +4,12 @@ package com.grongo.cloud_storage_app.integrationTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
+import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
+import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.repositories.RefreshRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.services.auth.AuthService;
+import com.grongo.cloud_storage_app.services.auth.JwtService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static com.grongo.cloud_storage_app.testUtils.TestUtils.*;
 
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @SpringBootTest
 public class AuthenticationIT {
 
@@ -34,7 +38,14 @@ public class AuthenticationIT {
     private RefreshRepository refreshRepository;
 
     @Autowired
+    private AuthService authService;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
     private MockMvc mockMvc;
+
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -50,17 +61,19 @@ public class AuthenticationIT {
 
         Optional<User> user = userRepository.findById(1L);
         assertThat(user).isPresent();
-
     }
 
     @Test
     public void testIfUserCanBeAuthenticated() throws Exception {
-        String requestUserJson = getRequestUserJson();
+        RegisterUser registerUser = getRequestUser();
+        String authenticateUserJson = getAuthenticateUserJson();
+
+        authService.createUserCredentials(registerUser);
 
         mockMvc.perform(MockMvcRequestBuilders
                 .post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(requestUserJson)
+                .content(authenticateUserJson)
         )
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -70,23 +83,14 @@ public class AuthenticationIT {
     @Test
     public void testIfRefreshEndpointReturnsAnAccessToken() throws Exception {
 
-        String requestUserJson = getRequestUserJson();
+        RegisterUser registerUser = getRequestUser();
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestUserJson)
-                )
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(cookie().exists("rt_session_id"))
-                .andReturn();
-
-        Cookie refreshCookie = result.getResponse().getCookie("rt_session_id");
+        UserDto userDto = authService.createUserCredentials(registerUser);
+        Cookie refreshTokenCookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
 
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/auth/refresh")
-                .cookie(refreshCookie)
+                .cookie(refreshTokenCookie)
         )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
@@ -95,16 +99,18 @@ public class AuthenticationIT {
 
     @Test
     public void testIfUserCanLogOut() throws Exception {
-        String requestUserJson = getRequestUserJson();
+        RegisterUser registerUser = getRequestUser();
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestUserJson)
-                )
-                .andReturn();
+        UserDto userDto = authService.createUserCredentials(registerUser);
+        Cookie refreshTokenCookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
 
-        Cookie refreshCookie = result.getResponse().getCookie("rt_session_id");
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/auth/logout")
+                .cookie(refreshTokenCookie)
+        ).andExpect(cookie().value("rt_session_id", ""));
+
+        String tokenId = refreshTokenCookie.getValue();
+        Optional<String> jwtRefresh = jwtService.findRefreshById(tokenId);
+        assertThat(jwtRefresh).isEmpty();
     }
 
     @Test
@@ -117,24 +123,14 @@ public class AuthenticationIT {
 
     @Test
     public void testIfJwtAllowAccessWithJwt() throws Exception {
-        String requestUserJson = getRequestUserJson();
+        RegisterUser registerUser = getRequestUser();
+        UserDto userDto = authService.createUserCredentials(registerUser);
 
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                        .post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestUserJson)
-                )
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(cookie().exists("rt_session_id"))
-                .andReturn();
-
-        AccessTokenResponse accessTokenResponse = objectMapper.readValue(result.getResponse().getContentAsString(), AccessTokenResponse.class);
-        String accessToken = accessTokenResponse.getAccessToken();
+        AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
 
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/ping")
-                .header("Authorization", "Bearer " + accessToken)
+                .header("Authorization", "Bearer " + accessTokenResponse.getAccessToken())
         ).andExpect(status().isOk());
     }
 }

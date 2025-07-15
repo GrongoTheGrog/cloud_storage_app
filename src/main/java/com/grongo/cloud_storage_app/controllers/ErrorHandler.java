@@ -8,8 +8,11 @@ import com.grongo.cloud_storage_app.exceptions.tokenExceptions.MissingTokenExcep
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenUserNotFoundException;
 import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
+
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -17,12 +20,14 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import javax.naming.AuthenticationException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestControllerAdvice
 public class ErrorHandler {
 
     @ExceptionHandler(HttpException.class)
-    public ResponseEntity<ExceptionResponse> unauthorized(HttpException e){
+    public ResponseEntity<ExceptionResponse> generalHttpException(HttpException e){
 
         ExceptionResponse exceptionResponse = new ExceptionResponse(
                 e.getStatus().value(),
@@ -34,5 +39,26 @@ public class ErrorHandler {
                 .status(e.getStatus())
                 .body(exceptionResponse);
 
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ExceptionResponse invalidBody(ConstraintViolationException e){
+        return ExceptionResponse.builder()
+                .status(409)
+                .error(HttpStatus.BAD_REQUEST.name())
+                .message(e.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> fieldException(MethodArgumentNotValidException e){
+        Map<String, String> errors = new HashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(error ->
+                errors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        return errors;
     }
 }

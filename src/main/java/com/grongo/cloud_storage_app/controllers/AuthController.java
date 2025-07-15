@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -33,7 +34,7 @@ public class AuthController {
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
     public String signup(
-            @RequestBody RegisterUser registerUser
+            @Validated @RequestBody RegisterUser registerUser
     ){
         UserDto userDto = authService.createUserCredentials(registerUser);
         return "User " + userDto.getId() + " created successfully.";

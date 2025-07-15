@@ -6,6 +6,7 @@ import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
 import com.grongo.cloud_storage_app.models.user.User;
+import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import org.springframework.stereotype.Component;
 
@@ -16,14 +17,25 @@ public class TestUtils {
     public static RegisterUser getRequestUser(){
         return RegisterUser.builder()
                 .username("test")
-                .email("test")
-                .password("test")
+                .email("test@gmail.com")
+                .password("test12345678")
                 .build();
     }
 
     public static String getRequestUserJson() throws JsonProcessingException {
         RegisterUser registerUser = getRequestUser();
         return objectMapper.writeValueAsString(registerUser);
+    }
+
+    public static AuthenticateUser getAuthenticateUser(){
+        return AuthenticateUser.builder()
+                .email("test@gmail.com")
+                .password("test12345678")
+                .build();
+    }
+
+    public static String getAuthenticateUserJson() throws JsonProcessingException {
+        return objectMapper.writeValueAsString(getAuthenticateUser());
     }
 
     public static Folder getFolder(String name, Folder parentFolder, User owner){
