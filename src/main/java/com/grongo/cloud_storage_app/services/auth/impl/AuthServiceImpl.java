@@ -1,7 +1,9 @@
 package com.grongo.cloud_storage_app.services.auth.impl;
 
+import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.models.user.dto.RequestUser;
+import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
+import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.security.CustomUserDetails;
@@ -13,6 +15,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,8 +29,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
-    public UserDto createUserCredentials(RequestUser requestUser){
-        User user = modelMapper.map(requestUser, User.class);
+    public UserDto createUserCredentials(RegisterUser registerUser){
+        User user = modelMapper.map(registerUser, User.class);
 
         if (user.getPassword() != null){
             String hashedPassword = passwordEncoder.encode(user.getPassword());
@@ -39,11 +42,11 @@ public class AuthServiceImpl implements AuthService {
         return modelMapper.map(user, UserDto.class);
     }
 
-    public UserDto authenticateUserCredentials(RequestUser requestUser){
+    public UserDto authenticateUserCredentials(AuthenticateUser authenticateUser){
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                    requestUser.getEmail(),
-                    requestUser.getPassword()
+                    authenticateUser.getEmail(),
+                    authenticateUser.getPassword()
                 )
         );
 
@@ -59,6 +62,12 @@ public class AuthServiceImpl implements AuthService {
         log.info("User logged out");
 
         return jwtService.createEmptyRefreshIdCookie();
+    }
+
+    @Override
+    public User getCurrentAuthenticatedUser() {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return userRepository.findByEmail(email).orElseThrow(() -> new UserNotFoundException("User authenticated does not exist."));
     }
 
 }

@@ -34,4 +34,7 @@ public class Item extends TimeStamps {
     private Folder folder;
     private String path;
 
+    @Column(insertable = false, updatable = false)
+    private String type;
+
 }

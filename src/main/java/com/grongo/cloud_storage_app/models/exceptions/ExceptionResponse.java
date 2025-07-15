@@ -14,18 +14,18 @@ public class ExceptionResponse {
 
     public ExceptionResponse(
             int status,
-            String message,
-            String details
+            String error,
+            String message
     ){
         this.message = message;
         this.status = status;
-        this.details = details;
         this.timestamp = new Date().toString();
+        this.error = error;
     }
 
     int status;
+    String error;
     String message;
-    String details;
     String timestamp;
 
 }

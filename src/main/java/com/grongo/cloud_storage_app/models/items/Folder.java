@@ -1,10 +1,7 @@
 package com.grongo.cloud_storage_app.models.items;
 
 
-import jakarta.persistence.DiscriminatorValue;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,8 +19,8 @@ import java.util.List;
 @NoArgsConstructor
 public class Folder extends Item{
 
-    @OneToMany
-    @JoinColumn(name = "stored_files")
+    @OneToMany(cascade = CascadeType.REMOVE)
+    @JoinColumn(name = "folder_id")
     private List<Item> storedFiles;
 
 }

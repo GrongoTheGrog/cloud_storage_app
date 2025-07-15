@@ -1,7 +1,10 @@
 package com.grongo.cloud_storage_app.exceptions.userExceptions;
 
-public class UserException extends RuntimeException {
-    public UserException(String message) {
-        super(message);
+import com.grongo.cloud_storage_app.exceptions.HttpException;
+import org.springframework.http.HttpStatus;
+
+public class UserException extends HttpException {
+    public UserException(String message, HttpStatus status) {
+        super(message, status);
     }
 }
