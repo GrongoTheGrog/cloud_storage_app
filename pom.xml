@@ -41,6 +41,7 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -68,6 +69,7 @@
 		</dependency>
 
 		<!--JWT DEPENDENCIES-->
+
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
@@ -87,6 +89,7 @@
 		</dependency>
 
 		<!--MODEL MAPPER DEPENDENCY-->
+
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>

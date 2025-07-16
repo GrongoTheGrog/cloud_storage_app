@@ -11,6 +11,7 @@ import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
+import com.grongo.cloud_storage_app.services.cache.impl.DownloadLinkCache;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import jakarta.annotation.PostConstruct;
@@ -49,6 +50,8 @@ public class FileServiceImpl implements FileService {
     @Value("${BUCKET_NAME}")
     private String bucketName;
 
+    private Duration linkTTL = Duration.ofMinutes(10);
+
     private final S3Client s3Client;
     private final UserRepository userRepository;
     private final FolderRepository folderRepository;
@@ -57,6 +60,7 @@ public class FileServiceImpl implements FileService {
     private final ModelMapper modelMapper;
     private final S3Presigner s3Presigner;
     private final AuthService authService;
+    private final DownloadLinkCache downloadLinkCache;
 
     @PostConstruct
     public void bucketCheck(){
@@ -143,6 +147,12 @@ public class FileServiceImpl implements FileService {
 
         storageService.checkItemPermission(file, user);
 
+        String cachedLink = downloadLinkCache.getKey(fileId.toString());
+        if (cachedLink != null) {
+            downloadLinkCache.refreshKey(fileId.toString(), linkTTL);
+            return cachedLink;
+        }
+
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -150,12 +160,14 @@ public class FileServiceImpl implements FileService {
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(10))
+                .signatureDuration(linkTTL)
                 .getObjectRequest(getObjectRequest)
                 .build();
 
         PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(presignRequest);
-        return presignedGetObjectRequest.url().toExternalForm();
+        String url = presignedGetObjectRequest.url().toExternalForm();
+        downloadLinkCache.setKey(fileId.toString(), url, linkTTL);
+        return url;
     }
 
     @Override
