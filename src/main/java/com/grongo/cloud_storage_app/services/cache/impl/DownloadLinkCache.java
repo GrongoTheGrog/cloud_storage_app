@@ -11,8 +11,7 @@ import org.springframework.stereotype.Service;
 public class DownloadLinkCache extends CacheService<String> {
 
     public DownloadLinkCache(RedisTemplateFactory<String> templateFactory){
-        this.redisTemplate = templateFactory.createTemplate(String.class);
-        this.prefix = "link:";
+        this.redisTemplate = templateFactory.createReactiveTemplate(String.class);
     }
 
 }

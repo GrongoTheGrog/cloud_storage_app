@@ -32,7 +32,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-
+import com.grongo.cloud_storage_app.services.cache.CacheKeys;
 import static com.grongo.cloud_storage_app.services.FileTypeDetector.*;
 
 import java.io.IOException;
@@ -149,7 +149,7 @@ public class FileServiceImpl implements FileService {
 
         String cachedLink = downloadLinkCache.getKey(fileId.toString());
         if (cachedLink != null) {
-            downloadLinkCache.refreshKey(fileId.toString(), linkTTL);
+            downloadLinkCache.refreshKey(CacheKeys.fileLinkKey(fileId), linkTTL);
             return cachedLink;
         }
 
@@ -166,7 +166,7 @@ public class FileServiceImpl implements FileService {
 
         PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(presignRequest);
         String url = presignedGetObjectRequest.url().toExternalForm();
-        downloadLinkCache.setKey(fileId.toString(), url, linkTTL);
+        downloadLinkCache.setKey(CacheKeys.fileLinkKey(fileId), url, linkTTL);
         return url;
     }
 

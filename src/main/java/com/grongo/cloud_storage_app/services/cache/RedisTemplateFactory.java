@@ -19,7 +19,7 @@ public class RedisTemplateFactory <T> {
         this.redisConnectionFactory = redisConnectionFactory;
     }
 
-    public ReactiveRedisTemplate<String, T> createTemplate(Class<T> tClass){
+    public ReactiveRedisTemplate<String, T> createReactiveTemplate(Class<T> tClass){
         Jackson2JsonRedisSerializer<T> serializer = new Jackson2JsonRedisSerializer<>(tClass);
         StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
 
