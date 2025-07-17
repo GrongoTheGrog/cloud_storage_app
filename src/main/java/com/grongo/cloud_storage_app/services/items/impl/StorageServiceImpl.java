@@ -8,17 +8,20 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundExc
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageException;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
+import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -28,8 +31,8 @@ public class StorageServiceImpl implements StorageService {
 
     final private ItemRepository itemRepository;
     final private FolderRepository folderRepository;
-    final private UserRepository userRepository;
     final private AuthService authService;
+    final private OpenFolderCache openFolderCache;
 
     @Override
     public void updatePath(Long itemId) {
@@ -139,13 +142,23 @@ public class StorageServiceImpl implements StorageService {
     @Transactional(readOnly = true)
     public List<Item> getItemsInFolder(Long id, Long userId) {
         if (id == null){
-            return itemRepository.findAllRootItems(userId);
+
+            //check for cache in root folder ("user" + userId)
+            List<Item> cachedList = openFolderCache.getKeyList("user" + userId);
+            if (!cachedList.isEmpty()) return cachedList;
+
+            List<Item> itemsList = itemRepository.findAllRootItems(userId);
+            openFolderCache.setKeyList("user" + userId, itemsList, Duration.ofMinutes(60));
+            return itemsList;
         }
 
         User user = authService.getCurrentAuthenticatedUser();
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
 
         checkItemPermission(folder, user);
+
+        //  NO CACHING HERE SINCE THERE IS NO POINT ON CACHING
+        //  A GET METHOD
 
         return folder.getStoredFiles();
     }

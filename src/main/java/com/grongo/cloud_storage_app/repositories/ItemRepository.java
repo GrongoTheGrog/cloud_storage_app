@@ -11,6 +11,6 @@ import java.util.List;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    @Query(nativeQuery = true, value = "SELECT * FROM t_items WHERE folder_id IS NULL AND owner_id = ?1")
+    @Query(nativeQuery = true, value = "SELECT * FROM t_items WHERE folder_id IS NULL AND owner_id = ?")
     public List<Item> findAllRootItems(Long userId);
 }

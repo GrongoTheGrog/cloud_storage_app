@@ -14,6 +14,7 @@ import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
+import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +33,9 @@ public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
     private final ModelMapper modelMapper;
-    private final UserRepository userRepository;
-    private final ItemRepository itemRepository;
     private final StorageService storageService;
     private final AuthService authService;
+    private final OpenFolderCache openFolderCache;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -58,7 +58,6 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = Folder.builder().name(folderRequest.getName()).folder(parentFolder).owner(user).build();
 
         folderRepository.save(folder);
-
         storageService.updatePath(folder);
 
         return modelMapper.map(folder, FolderDto.class);
@@ -78,7 +77,9 @@ public class FolderServiceImpl implements FolderService {
     public List<ItemDto> openFolder(Long folderId){
         User user = authService.getCurrentAuthenticatedUser();
         Long userId = user.getId();
+
         List<Item> itemList = storageService.getItemsInFolder(folderId, userId);
+
 
         return itemList.stream().map(item -> {
             item.setFolder(null);
