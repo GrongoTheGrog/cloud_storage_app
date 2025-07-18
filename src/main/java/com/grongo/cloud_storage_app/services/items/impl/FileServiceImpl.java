@@ -110,7 +110,6 @@ public class FileServiceImpl implements FileService {
                 .build();
 
         fileRepository.save(file);
-
         storageService.updatePath(file);
 
         try{

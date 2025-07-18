@@ -53,6 +53,7 @@ public class StorageServiceImpl implements StorageService {
         }
 
         path += "/" + item.getName();
+        item.setPath(path);
 
         itemRepository.save(item);
 
@@ -142,23 +143,13 @@ public class StorageServiceImpl implements StorageService {
     @Transactional(readOnly = true)
     public List<Item> getItemsInFolder(Long id, Long userId) {
         if (id == null){
-
-            //check for cache in root folder ("user" + userId)
-            List<Item> cachedList = openFolderCache.getKeyList("user" + userId);
-            if (!cachedList.isEmpty()) return cachedList;
-
-            List<Item> itemsList = itemRepository.findAllRootItems(userId);
-            openFolderCache.setKeyList("user" + userId, itemsList, Duration.ofMinutes(60));
-            return itemsList;
+            return itemRepository.findAllRootItems(userId);
         }
 
         User user = authService.getCurrentAuthenticatedUser();
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
 
         checkItemPermission(folder, user);
-
-        //  NO CACHING HERE SINCE THERE IS NO POINT ON CACHING
-        //  A GET METHOD
 
         return folder.getStoredFiles();
     }

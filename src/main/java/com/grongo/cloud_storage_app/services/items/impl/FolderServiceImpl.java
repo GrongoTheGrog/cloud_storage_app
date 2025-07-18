@@ -18,6 +18,7 @@ import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FolderServiceImpl implements FolderService {
@@ -88,4 +90,12 @@ public class FolderServiceImpl implements FolderService {
                     modelMapper.map(item, FolderDto.class);
         }).toList();
     }
+
+    @Override
+    public void deleteFolder(Long folderId) {
+        log.info("Deleting folder {}.", folderId);
+        folderRepository.deleteById(folderId);
+    }
+
+
 }

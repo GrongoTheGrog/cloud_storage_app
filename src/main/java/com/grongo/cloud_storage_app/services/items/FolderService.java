@@ -29,7 +29,6 @@ public interface FolderService {
      */
     Optional<FolderDto> findFolderById(Long id);
 
-
     /**
      *
      * Looks for all items in a given folder
@@ -37,5 +36,12 @@ public interface FolderService {
      * @return a list of items
      * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException if folder can't be found with given id
      */
-    List<ItemDto> openFolder(Long id);
+    List<ItemDto> openFolder(Long Id);
+
+    /**
+     * deletes the folder by the given id
+     * @param folderId the id of the folder to be deleted
+     */
+    void deleteFolder(Long folderId);
+
 }
