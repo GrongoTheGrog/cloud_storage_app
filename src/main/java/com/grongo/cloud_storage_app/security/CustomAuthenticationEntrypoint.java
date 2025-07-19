@@ -22,7 +22,7 @@ public class CustomAuthenticationEntrypoint implements AuthenticationEntryPoint 
         String exceptionResponse = new ObjectMapper().writeValueAsString(new ExceptionResponse(
                 401,
                 "Bad credentials",
-                authException.getMessage()
+                authException.toString()
         ));
 
         response.setStatus(401);

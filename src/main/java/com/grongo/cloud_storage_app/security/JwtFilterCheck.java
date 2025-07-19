@@ -83,7 +83,9 @@ public class JwtFilterCheck extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         List<String> cleanUrls = List.of(
-                "/api/auth"
+                "/api/auth",
+                "/login",
+                "oauth2"
         );
 
         for (String url : cleanUrls){

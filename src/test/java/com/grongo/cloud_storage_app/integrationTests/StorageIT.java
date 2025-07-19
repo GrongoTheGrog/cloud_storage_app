@@ -214,11 +214,9 @@ public class StorageIT {
                     .content(moveItemRequestJson)
             ).andExpect(status().isNoContent());
 
-            Optional<FolderDto> movedFolder = folderService.findFolderById(folder1.getId());
+            FolderDto movedFolder = folderService.findFolderById(folder1.getId());
 
-            assertThat(movedFolder).isPresent();
-
-            FolderDto parentFolderDto = movedFolder.get().getFolder();
+            FolderDto parentFolderDto = movedFolder.getFolder();
             assertThat(parentFolderDto).isNull();
         }
 
@@ -241,11 +239,9 @@ public class StorageIT {
                     .content(moveItemRequestJson)
             ).andExpect(status().isNoContent());
 
-            Optional<FolderDto> movedFolder = folderService.findFolderById(folder1.getId());
+            FolderDto movedFolder = folderService.findFolderById(folder1.getId());
 
-            assertThat(movedFolder).isPresent();
-
-            FolderDto parentFolderDto = movedFolder.get().getFolder();
+            FolderDto parentFolderDto = movedFolder.getFolder();
             assertThat(parentFolderDto.getId()).isEqualTo(folder.getId());
         }
 

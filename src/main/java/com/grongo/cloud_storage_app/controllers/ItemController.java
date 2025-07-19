@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.controllers;
 
 
 import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
+import com.grongo.cloud_storage_app.models.items.dto.RenameItemRequest;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,13 +18,22 @@ public class ItemController {
 
     private final StorageService storageService;
 
-    @PatchMapping("/move/{id}")
+    @PatchMapping("/move/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleItemMove(
-            @PathVariable Long id,
+            @PathVariable Long itemId,
             @RequestBody MoveItemRequest moveItemRequest
             ){
-        storageService.moveItem(id, moveItemRequest.getNewFolderId());
+        storageService.moveItem(itemId, moveItemRequest.getNewFolderId());
+    }
+
+    @PatchMapping("/rename/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleItemRename(
+            @PathVariable Long itemId,
+            @RequestBody RenameItemRequest renameItemRequest
+            ){
+        storageService.renameItem(itemId, renameItemRequest.getNewName());
     }
 
 

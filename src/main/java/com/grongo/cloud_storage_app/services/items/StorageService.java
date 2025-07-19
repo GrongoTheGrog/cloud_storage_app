@@ -3,11 +3,14 @@ package com.grongo.cloud_storage_app.services.items;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.user.User;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
 
 import java.util.List;
 
 /**
  * Class intended for operations that suit both files and folders
+ *
+ * @author grongo
  */
 public interface StorageService {
 
@@ -48,6 +51,7 @@ public interface StorageService {
 
     /**Get all the items inside a given folder
      *
+     *
      * @param folderId folder to get the items from
      * @param userId used in case folderId is null and items are in root of user
      * @return A list of items
@@ -76,7 +80,8 @@ public interface StorageService {
      * Takes an item and a user, then throw if user is not the owner
      * @param item the item to check
      * @param user the user to check
+     * @param filePermission the permission to check
      * @throws com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException if user is not the owner
      */
-    void checkItemPermission(Item item, User user);
+    void checkItemPermission(Item item, User user, FilePermissions filePermission);
 }

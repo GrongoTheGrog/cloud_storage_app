@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.models.items.dto;
 
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.user.User;
+import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,7 +21,7 @@ public class ItemDto {
 
     private Long id;
     private String name;
-    private User owner;
+    private UserDto owner;
     private FolderDto folder;
     private String path;
     private String type;

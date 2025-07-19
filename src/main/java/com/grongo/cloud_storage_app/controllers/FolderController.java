@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
+import com.grongo.cloud_storage_app.exceptions.HttpException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
@@ -39,16 +40,27 @@ public class FolderController {
     public FolderDto handleFindFolderById(
             @PathVariable Long id
     ){
-        return folderService
-                .findFolderById(id)
-                .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
+        return folderService.findFolderById(id);
     }
 
     @GetMapping("/open/{id}")
     @ResponseStatus(HttpStatus.OK)
     public List<ItemDto> handleFolderOpening(
-            @PathVariable Long id
+            @PathVariable String id
     ){
-        return folderService.openFolder(id);
+        try{
+            Long folderId = id.equals("root") ? null : Long.parseLong(id);
+            return folderService.openFolder(folderId);
+        }catch (NumberFormatException e){
+            throw new HttpException("Enter either root or an id as the path variable.", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @DeleteMapping("/{folderId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleFolderDelete(
+            @PathVariable Long folderId
+    ){
+        folderService.deleteFolder(folderId);
     }
 }

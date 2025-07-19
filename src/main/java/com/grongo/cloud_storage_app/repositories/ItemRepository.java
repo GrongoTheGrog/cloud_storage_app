@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.repositories;
 
 
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

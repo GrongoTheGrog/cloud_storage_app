@@ -1,11 +1,15 @@
 package com.grongo.cloud_storage_app.models.items;
 
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.grongo.cloud_storage_app.models.TimeStamps;
 import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -17,6 +21,15 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = {"owner", "folder"})
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.EXISTING_PROPERTY,
+        property = "type"
+)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = File.class, name = "FILE"),
+        @JsonSubTypes.Type(value = Folder.class, name = "FOLDER")
+})
 public class Item extends TimeStamps {
 
     @Id
@@ -27,10 +40,12 @@ public class Item extends TimeStamps {
 
     @ManyToOne
     @JoinColumn(name = "owner_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User owner;
 
     @ManyToOne
     @JoinColumn(name = "folder_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Folder folder;
     private String path;
 

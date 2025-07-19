@@ -18,19 +18,14 @@ import lombok.NoArgsConstructor;
 public class SharedItemRequest {
 
 
-    @Valid
     @Email(message = "Enter a valid email format.")
     @NotBlank(message = "Email can't be blank.")
     @NotNull(message = "Email can't be null.")
     private String email;
 
-    @Valid
-    @NotBlank(message = "Item id can't be blank.")
     @NotNull(message = "Item id can't be null.")
     private Long itemId;
 
-    @Valid
-    @NotBlank(message = "File role can't be blank.")
     @NotNull(message = "File role can't be null.")
     private FileRoles fileRole;
 
