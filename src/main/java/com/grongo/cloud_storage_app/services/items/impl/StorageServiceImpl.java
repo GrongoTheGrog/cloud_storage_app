@@ -9,13 +9,16 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageExceptio
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
+import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,6 +36,7 @@ public class StorageServiceImpl implements StorageService {
     final private FolderRepository folderRepository;
     final private AuthService authService;
     final private OpenFolderCache openFolderCache;
+    final private SharedItemRepository sharedItemRepository;
 
     @Override
     public void updatePath(Long itemId) {
@@ -58,7 +62,7 @@ public class StorageServiceImpl implements StorageService {
         itemRepository.save(item);
 
 
-        // BREADTH FIRST TRAVERSAL ON FILE TREE
+        // GO UP THE FILE TREE
         if(item instanceof Folder folder){
             Queue<Item> items = new ArrayDeque<>();
             items.add(folder);
@@ -98,10 +102,10 @@ public class StorageServiceImpl implements StorageService {
                     .findById(newParentId)
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
 
-            checkItemPermission(parentFolder, user);
+            checkItemPermission(parentFolder, user, FilePermissions.MOVE);
         }
 
-        checkItemPermission(foundItem, user);
+        checkItemPermission(foundItem, user, FilePermissions.MOVE);
 
         //In case the resource is a folder, check if the new parent is not one of its subfolders
         if (foundItem.getType().equals("FOLDER") && checkIfFolderIsAncestor((Folder) foundItem, parentFolder)){
@@ -125,7 +129,7 @@ public class StorageServiceImpl implements StorageService {
         Long parentFolderId = foundItem.getFolder() == null ? null : foundItem.getFolder().getId();
         User user = authService.getCurrentAuthenticatedUser();
 
-        checkItemPermission(foundItem, user);
+        checkItemPermission(foundItem, user, FilePermissions.UPDATE);
 
         List<Item> itemList = getItemsInFolder(parentFolderId, user.getId());
 
@@ -149,7 +153,7 @@ public class StorageServiceImpl implements StorageService {
         User user = authService.getCurrentAuthenticatedUser();
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
 
-        checkItemPermission(folder, user);
+        checkItemPermission(folder, user, FilePermissions.VIEW);
 
         return folder.getStoredFiles();
     }
@@ -172,11 +176,32 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void checkItemPermission(Item item, User user) {
+    public void checkItemPermission(Item item, User user, FilePermissions filePermission) {
         if (!user.getId().equals(item.getOwner().getId())) {
-            throw new AccessDeniedException("Authenticated user is not the owner of the item.");
+
+            //first check if item is directly shared with user
+            Optional<SharedItem> sharedItem = sharedItemRepository.findByItemAndUser(item.getId(), user.getId());
+            if (sharedItem.isPresent()){
+                if (!sharedItem.get().getFileRole().hasPermission(filePermission)){
+                    throw new AccessDeniedException("User doesn't have permission to do such action.");
+                }
+                return;
+            }
+
+            //or search for a shared folder
+            List<SharedItem> sharedItems = sharedItemRepository.findByOwnerAndUser(item.getOwner().getId(), user.getId());
+
+            if (sharedItems.isEmpty()) throw new AccessDeniedException("User doesn't have permission to do such action.");
+
+            SharedItem sharedItemFolder = sharedItems.stream()
+                    .filter(sharedItemMapped-> item.getPath().startsWith(sharedItemMapped.getItem().getPath()))
+                    .sorted(Comparator.comparingInt( (SharedItem sharedItemSort) -> sharedItemSort.getItem().getPath().length()).reversed())
+                    .toList()
+                    .getFirst();
+
+            if (sharedItemFolder == null || !sharedItemFolder.getFileRole().hasPermission(filePermission)) {
+                throw new AccessDeniedException("User doesn't have permission to do such action.");
+            }
         }
     }
-
-
 }

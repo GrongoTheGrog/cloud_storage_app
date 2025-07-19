@@ -4,11 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
+import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRoles;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.services.s3.model.Owner;
 
 public class TestUtils {
 
@@ -59,6 +64,15 @@ public class TestUtils {
         return FolderRequest.builder()
                 .parentFolderId(folderParentId)
                 .name(name)
+                .build();
+    }
+
+    public static SharedItem getSharedItem(Item item, User user, User owner, FileRoles fileRole){
+        return SharedItem.builder()
+                .item(item)
+                .user(user)
+                .owner(owner)
+                .fileRole(fileRole)
                 .build();
     }
 }

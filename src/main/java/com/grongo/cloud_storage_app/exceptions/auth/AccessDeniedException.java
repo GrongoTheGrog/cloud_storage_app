@@ -5,6 +5,6 @@ import org.springframework.http.HttpStatus;
 
 public class AccessDeniedException extends HttpException {
     public AccessDeniedException(String message) {
-        super(message, HttpStatus.UNAUTHORIZED);
+        super(message, HttpStatus.FORBIDDEN);
     }
 }

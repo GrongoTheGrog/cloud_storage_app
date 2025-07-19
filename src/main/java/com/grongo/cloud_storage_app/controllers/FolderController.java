@@ -40,9 +40,7 @@ public class FolderController {
     public FolderDto handleFindFolderById(
             @PathVariable Long id
     ){
-        return folderService
-                .findFolderById(id)
-                .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
+        return folderService.findFolderById(id);
     }
 
     @GetMapping("/open/{id}")
@@ -62,7 +60,7 @@ public class FolderController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleFolderDelete(
             @PathVariable Long folderId
-    ) {
+    ){
         folderService.deleteFolder(folderId);
     }
 }

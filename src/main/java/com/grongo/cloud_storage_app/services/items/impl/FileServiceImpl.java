@@ -14,6 +14,7 @@ import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.DownloadLinkCache;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -144,7 +145,7 @@ public class FileServiceImpl implements FileService {
                 .findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("Could not find file with id of " + fileId));
 
-        storageService.checkItemPermission(file, user);
+        storageService.checkItemPermission(file, user, FilePermissions.VIEW);
 
         String cachedLink = downloadLinkCache.getKey(fileId.toString());
         if (cachedLink != null) {
@@ -186,7 +187,7 @@ public class FileServiceImpl implements FileService {
     public void deleteFile(File file){
         User user = authService.getCurrentAuthenticatedUser();
 
-        storageService.checkItemPermission(file, user);
+        storageService.checkItemPermission(file, user, FilePermissions.DELETE);
 
         fileRepository.deleteById(file.getId());
 

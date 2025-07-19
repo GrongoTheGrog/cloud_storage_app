@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.services.sharedItems;
 
 import com.grongo.cloud_storage_app.models.items.File;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -10,7 +11,7 @@ public enum FileRoles {
     EDIT_MODE("EDIT"),
     ADMIN_MODE("ADMIN");
 
-    private final Set<FilePermissions> filePermissionsSet = new HashSet<>();
+    private final EnumSet<FilePermissions> filePermissionsSet;
 
     private final String name;
 
@@ -19,16 +20,22 @@ public enum FileRoles {
 
         switch (name){
             case "VIEW":
-                filePermissionsSet.add(FilePermissions.VIEW);
+                filePermissionsSet = EnumSet.of(FilePermissions.VIEW);
                 break;
             case "EDIT":
-                filePermissionsSet.add(FilePermissions.VIEW);
-                filePermissionsSet.add(FilePermissions.UPDATE);
+                filePermissionsSet = EnumSet.of(FilePermissions.VIEW, FilePermissions.UPDATE);
                 break;
             case "ADMIN":
-                filePermissionsSet.add(FilePermissions.VIEW);
-                filePermissionsSet.add(FilePermissions.UPDATE);
-                filePermissionsSet.add(FilePermissions.DELETE);
+                filePermissionsSet = EnumSet.of(
+                        FilePermissions.VIEW,
+                        FilePermissions.UPDATE,
+                        FilePermissions.DELETE,
+                        FilePermissions.SHARE,
+                        FilePermissions.MOVE
+                );
+                break;
+            default:
+                filePermissionsSet = EnumSet.noneOf(FilePermissions.class);
                 break;
         }
 

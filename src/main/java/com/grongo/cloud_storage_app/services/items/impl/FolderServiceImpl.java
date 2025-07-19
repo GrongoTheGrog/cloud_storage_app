@@ -17,6 +17,7 @@ import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -68,9 +69,13 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<FolderDto> findFolderById(Long id) {
-        Optional<Folder> folder = folderRepository.findById(id);
-        return folder.map(folderMapped -> modelMapper.map(folderMapped, FolderDto.class));
+    public FolderDto findFolderById(Long id) {
+        Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder of id " + id));
+        User user = authService.getCurrentAuthenticatedUser();
+
+        storageService.checkItemPermission(folder, user, FilePermissions.VIEW);
+
+        return modelMapper.map(folder, FolderDto.class);
     }
 
 
