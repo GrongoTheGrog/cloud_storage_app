@@ -14,14 +14,11 @@ import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
-import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -40,7 +37,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
 
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id " + itemId));
-        storageService.checkItemPermission(item, authenticatedUser, FilePermissions.SHARE);
+        storageService.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
         User foundTargetUser = userRepository.findByEmail(sharedItemRequest.getEmail()).orElseThrow(() ->
                 new UserNotFoundException("Could not find email with email " + sharedItemRequest.getEmail()

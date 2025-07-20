@@ -11,13 +11,11 @@ import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
 import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
-import com.grongo.cloud_storage_app.repositories.ItemRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
-import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -73,7 +70,7 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder of id " + id));
         User user = authService.getCurrentAuthenticatedUser();
 
-        storageService.checkItemPermission(folder, user, FilePermissions.VIEW);
+        storageService.checkItemPermission(folder, user, FilePermission.VIEW);
 
         return modelMapper.map(folder, FolderDto.class);
     }

@@ -1,8 +1,7 @@
 package com.grongo.cloud_storage_app.models.sharedItems.dto;
 
 
-import com.grongo.cloud_storage_app.services.sharedItems.FileRoles;
-import jakarta.validation.Valid;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,6 +26,6 @@ public class SharedItemRequest {
     private Long itemId;
 
     @NotNull(message = "File role can't be null.")
-    private FileRoles fileRole;
+    private FileRole fileRole;
 
 }

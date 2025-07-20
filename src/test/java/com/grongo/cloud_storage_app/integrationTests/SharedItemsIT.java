@@ -13,7 +13,7 @@ import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.JwtService;
-import com.grongo.cloud_storage_app.services.sharedItems.FileRoles;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,7 +90,7 @@ public class SharedItemsIT {
         SharedItemRequest sharedItemRequest = SharedItemRequest.builder()
                 .itemId(folder.getId())
                 .email(sharingUser.getEmail())
-                .fileRole(FileRoles.ADMIN_MODE)
+                .fileRole(FileRole.ADMIN_MODE)
                 .build();
 
         String sharedItemRequestJson = objectMapper.writeValueAsString(sharedItemRequest);
@@ -124,7 +124,7 @@ public class SharedItemsIT {
         SharedItemRequest sharedItemRequest = SharedItemRequest.builder()
                 .itemId(file.getId())
                 .email(sharingUser.getEmail())
-                .fileRole(FileRoles.ADMIN_MODE)
+                .fileRole(com.grongo.cloud_storage_app.services.sharedItems.FileRole.ADMIN_MODE)
                 .build();
 
         String sharedItemRequestJson = objectMapper.writeValueAsString(sharedItemRequest);
@@ -148,7 +148,7 @@ public class SharedItemsIT {
         Folder folder = getFolder("folder", null, currentAuthenticatedUser);
         folderRepository.save(folder);
 
-        SharedItem sharedItem = getSharedItem(folder, sharingUser, currentAuthenticatedUser, FileRoles.VIEW_MODE);
+        SharedItem sharedItem = getSharedItem(folder, sharingUser, currentAuthenticatedUser, com.grongo.cloud_storage_app.services.sharedItems.FileRole.VIEW_MODE);
         sharedItemRepository.save(sharedItem);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + folder.getId())
@@ -167,7 +167,7 @@ public class SharedItemsIT {
         nestedFolder.setPath("/sharedFolder/nestedFolder");
         folderRepository.save(nestedFolder);
 
-        SharedItem sharedItem = getSharedItem(sharedFolder, sharingUser, currentAuthenticatedUser, FileRoles.VIEW_MODE);
+        SharedItem sharedItem = getSharedItem(sharedFolder, sharingUser, currentAuthenticatedUser, com.grongo.cloud_storage_app.services.sharedItems.FileRole.VIEW_MODE);
         sharedItemRepository.save(sharedItem);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + nestedFolder.getId())
@@ -181,7 +181,7 @@ public class SharedItemsIT {
         sharedFolder.setPath("/sharedFolder");
         folderRepository.save(sharedFolder);
 
-        SharedItem sharedItem = getSharedItem(sharedFolder, sharingUser, currentAuthenticatedUser, FileRoles.VIEW_MODE);
+        SharedItem sharedItem = getSharedItem(sharedFolder, sharingUser, currentAuthenticatedUser, com.grongo.cloud_storage_app.services.sharedItems.FileRole.VIEW_MODE);
         sharedItemRepository.save(sharedItem);
 
         MoveItemRequest moveItemRequest = MoveItemRequest.builder().newFolderId(null).build();
