@@ -6,6 +6,7 @@ import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,17 +18,15 @@ public class FileController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String handleFileUpload(
+    public void handleFileUpload(
             @ModelAttribute UploadFileForm uploadFileForm
             ){
 
-        FileDto fileDto = fileService.createFile(
+        fileService.createFile(
                 uploadFileForm.getFile(),
                 uploadFileForm.getFolderId(),
                 uploadFileForm.getFileName()
         );
-
-        return String.format("File %s uploaded on path %s.", fileDto.getName(), fileDto.getPath());
     }
 
     @GetMapping("/download/{id}")
@@ -44,6 +43,15 @@ public class FileController {
             @PathVariable Long id
     ){
         fileService.deleteFile(id);
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleUpdateFileUpload(
+            @ModelAttribute UploadFileForm uploadFileForm,
+            @PathVariable Long id
+    ){
+        fileService.updateFile(uploadFileForm, id);
     }
 
 }
