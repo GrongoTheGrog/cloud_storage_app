@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/items/share")
+@RequestMapping("/api/sharedItems")
 @RequiredArgsConstructor
 public class SharedItemsController {
 
@@ -20,6 +20,23 @@ public class SharedItemsController {
     public void handleItemSharing(
             @Validated @RequestBody SharedItemRequest sharedItemRequest
     ){
-        sharedItemsService.sharedItem(sharedItemRequest);
+        sharedItemsService.createSharedItem(sharedItemRequest);
+    }
+
+    @PutMapping(consumes = "application/json", path = "/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleSharedItemUpdate(
+            @Validated @RequestBody SharedItemRequest sharedItemRequest,
+            @PathVariable Long id
+    ){
+        sharedItemsService.updateSharedItem(sharedItemRequest, id);
+    }
+
+    @DeleteMapping("{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleDeleteSharedItem(
+           @PathVariable Long id
+    ){
+        sharedItemsService.deleteSharedItem(id);
     }
 }

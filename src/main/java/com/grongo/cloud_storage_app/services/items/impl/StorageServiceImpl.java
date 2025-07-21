@@ -190,13 +190,12 @@ public class StorageServiceImpl implements StorageService {
 
             if (sharedItems.isEmpty()) throw new AccessDeniedException("User doesn't have permission to do such action.");
 
-            SharedItem sharedItemFolder = sharedItems.stream()
+            List<SharedItem> sharedItemFolderList = sharedItems.stream()
                     .filter(sharedItemMapped-> item.getPath().startsWith(sharedItemMapped.getItem().getPath()))
                     .sorted(Comparator.comparingInt( (SharedItem sharedItemSort) -> sharedItemSort.getItem().getPath().length()).reversed())
-                    .toList()
-                    .getFirst();
+                    .toList();
 
-            if (sharedItemFolder == null || !sharedItemFolder.getFileRole().hasPermission(filePermission)) {
+            if (sharedItemFolderList.isEmpty() || !sharedItemFolderList.getFirst().getFileRole().hasPermission(filePermission)) {
                 throw new AccessDeniedException("User doesn't have permission to do such action.");
             }
         }

@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.integrationTests;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
@@ -95,7 +96,7 @@ public class SharedItemsIT {
 
         String sharedItemRequestJson = objectMapper.writeValueAsString(sharedItemRequest);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/items/share")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/sharedItems")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(sharedItemRequestJson)
                 .header("Authorization", "Bearer " + accessToken)
@@ -129,7 +130,7 @@ public class SharedItemsIT {
 
         String sharedItemRequestJson = objectMapper.writeValueAsString(sharedItemRequest);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/items/share")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/sharedItems")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(sharedItemRequestJson)
                 .header("Authorization", "Bearer " + accessToken)
@@ -192,5 +193,56 @@ public class SharedItemsIT {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(moveItemRequest))
         ).andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void testIfSharedItemsCanBeUpdated() throws Exception {
+        Folder sharedFolder = getFolder("sharedFolder", null, currentAuthenticatedUser);
+        sharedFolder.setPath("/sharedFolder");
+        folderRepository.save(sharedFolder);
+
+        Folder updatedSharedFolder = getFolder("updatedSharedFolder", null, currentAuthenticatedUser);
+        updatedSharedFolder.setPath("/updatedSharedFolder");
+        folderRepository.save(updatedSharedFolder);
+
+        SharedItem sharedItem = getSharedItem(sharedFolder, sharingUser, currentAuthenticatedUser, com.grongo.cloud_storage_app.services.sharedItems.FileRole.VIEW_MODE);
+        sharedItemRepository.save(sharedItem);
+
+        SharedItemRequest sharedItemRequest = SharedItemRequest.builder()
+                .email(sharingUser.getEmail())
+                .itemId(updatedSharedFolder.getId())
+                .fileRole(FileRole.EDIT_MODE)
+                .build();
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/sharedItems/" + sharedItem.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sharedItemRequest))
+                .header("Authorization", "Bearer " + accessToken)
+        ).andExpect(status().isNoContent());
+
+
+        List<SharedItem> sharedItemList = sharedItemRepository.findAll();
+
+        assertThat(sharedItemList.size()).isEqualTo(1);
+        assertThat(sharedItemList.getFirst().getItem().getName()).isEqualTo(updatedSharedFolder.getName());
+        assertThat(sharedItemList.getFirst().getFileRole()).isEqualTo(FileRole.EDIT_MODE);
+    }
+
+    @Test
+    public void TestIfSharingResourceCanBeDeleted() throws Exception {
+        Folder sharedFolder = getFolder("sharedFolder", null, currentAuthenticatedUser);
+        sharedFolder.setPath("/sharedFolder");
+        folderRepository.save(sharedFolder);
+
+        SharedItem sharedItem = getSharedItem(sharedFolder, sharingUser, currentAuthenticatedUser, com.grongo.cloud_storage_app.services.sharedItems.FileRole.VIEW_MODE);
+        sharedItemRepository.save(sharedItem);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/sharedItems/" + sharedItem.getId())
+                .header("Authorization", "Bearer " + accessToken)
+        ).andExpect(status().isNoContent());
+
+        List<SharedItem> sharedItemList = sharedItemRepository.findAll();
+
+        assertThat(sharedItemList.isEmpty()).isTrue();
     }
 }
