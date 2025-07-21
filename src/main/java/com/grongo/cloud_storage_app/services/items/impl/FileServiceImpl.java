@@ -1,8 +1,6 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
-import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
-import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.dto.FileDto;
@@ -14,14 +12,12 @@ import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.DownloadLinkCache;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
-import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,7 +38,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -145,7 +140,7 @@ public class FileServiceImpl implements FileService {
                 .findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("Could not find file with id of " + fileId));
 
-        storageService.checkItemPermission(file, user, FilePermissions.VIEW);
+        storageService.checkItemPermission(file, user, FilePermission.VIEW);
 
         String cachedLink = downloadLinkCache.getKey(fileId.toString());
         if (cachedLink != null) {
@@ -187,7 +182,7 @@ public class FileServiceImpl implements FileService {
     public void deleteFile(File file){
         User user = authService.getCurrentAuthenticatedUser();
 
-        storageService.checkItemPermission(file, user, FilePermissions.DELETE);
+        storageService.checkItemPermission(file, user, FilePermission.DELETE);
 
         fileRepository.deleteById(file.getId());
 

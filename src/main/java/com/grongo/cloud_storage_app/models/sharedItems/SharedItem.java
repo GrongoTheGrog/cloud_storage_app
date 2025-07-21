@@ -4,7 +4,7 @@ package com.grongo.cloud_storage_app.models.sharedItems;
 import com.grongo.cloud_storage_app.models.TimeStamps;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.services.sharedItems.FileRoles;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,5 +41,5 @@ public class SharedItem extends TimeStamps {
     @JoinColumn(name = "item_id")
     private Item item;
 
-    private FileRoles fileRole;
+    private FileRole fileRole;
 }

@@ -3,6 +3,7 @@ package com.grongo.cloud_storage_app.controllers;
 
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
+import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
@@ -64,6 +65,7 @@ public class AuthController {
         return ResponseEntity.ok().body(accessToken);
 
     }
+
 
     @GetMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)

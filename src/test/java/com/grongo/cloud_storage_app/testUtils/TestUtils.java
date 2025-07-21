@@ -10,10 +10,7 @@ import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
-import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
-import com.grongo.cloud_storage_app.services.sharedItems.FileRoles;
-import org.springframework.stereotype.Component;
-import software.amazon.awssdk.services.s3.model.Owner;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 
 public class TestUtils {
 
@@ -67,7 +64,7 @@ public class TestUtils {
                 .build();
     }
 
-    public static SharedItem getSharedItem(Item item, User user, User owner, FileRoles fileRole){
+    public static SharedItem getSharedItem(Item item, User user, User owner, FileRole fileRole){
         return SharedItem.builder()
                 .item(item)
                 .user(user)

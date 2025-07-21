@@ -3,7 +3,7 @@ package com.grongo.cloud_storage_app.services.items;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 
 import java.util.List;
 
@@ -83,5 +83,5 @@ public interface StorageService {
      * @param filePermission the permission to check
      * @throws com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException if user is not the owner
      */
-    void checkItemPermission(Item item, User user, FilePermissions filePermission);
+    void checkItemPermission(Item item, User user, FilePermission filePermission);
 }

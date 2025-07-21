@@ -85,7 +85,10 @@ public class JwtFilterCheck extends OncePerRequestFilter {
         List<String> cleanUrls = List.of(
                 "/api/auth",
                 "/login",
-                "oauth2"
+                "oauth2",
+                "/swagger",
+                "/v3/api-docs",
+                "/webjars"
         );
 
         for (String url : cleanUrls){

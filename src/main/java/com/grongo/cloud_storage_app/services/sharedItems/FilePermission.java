@@ -1,6 +1,6 @@
 package com.grongo.cloud_storage_app.services.sharedItems;
 
-public enum FilePermissions {
+public enum FilePermission {
     VIEW,
     UPDATE,
     DELETE,

@@ -8,23 +8,20 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundExc
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageException;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
-import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
-import com.grongo.cloud_storage_app.services.sharedItems.FilePermissions;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -102,10 +99,10 @@ public class StorageServiceImpl implements StorageService {
                     .findById(newParentId)
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
 
-            checkItemPermission(parentFolder, user, FilePermissions.MOVE);
+            checkItemPermission(parentFolder, user, FilePermission.MOVE);
         }
 
-        checkItemPermission(foundItem, user, FilePermissions.MOVE);
+        checkItemPermission(foundItem, user, FilePermission.MOVE);
 
         //In case the resource is a folder, check if the new parent is not one of its subfolders
         if (foundItem.getType().equals("FOLDER") && checkIfFolderIsAncestor((Folder) foundItem, parentFolder)){
@@ -129,7 +126,7 @@ public class StorageServiceImpl implements StorageService {
         Long parentFolderId = foundItem.getFolder() == null ? null : foundItem.getFolder().getId();
         User user = authService.getCurrentAuthenticatedUser();
 
-        checkItemPermission(foundItem, user, FilePermissions.UPDATE);
+        checkItemPermission(foundItem, user, FilePermission.UPDATE);
 
         List<Item> itemList = getItemsInFolder(parentFolderId, user.getId());
 
@@ -153,7 +150,7 @@ public class StorageServiceImpl implements StorageService {
         User user = authService.getCurrentAuthenticatedUser();
         Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
 
-        checkItemPermission(folder, user, FilePermissions.VIEW);
+        checkItemPermission(folder, user, FilePermission.VIEW);
 
         return folder.getStoredFiles();
     }
@@ -176,7 +173,7 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void checkItemPermission(Item item, User user, FilePermissions filePermission) {
+    public void checkItemPermission(Item item, User user, FilePermission filePermission) {
         if (!user.getId().equals(item.getOwner().getId())) {
 
             //first check if item is directly shared with user
@@ -193,13 +190,12 @@ public class StorageServiceImpl implements StorageService {
 
             if (sharedItems.isEmpty()) throw new AccessDeniedException("User doesn't have permission to do such action.");
 
-            SharedItem sharedItemFolder = sharedItems.stream()
+            List<SharedItem> sharedItemFolderList = sharedItems.stream()
                     .filter(sharedItemMapped-> item.getPath().startsWith(sharedItemMapped.getItem().getPath()))
                     .sorted(Comparator.comparingInt( (SharedItem sharedItemSort) -> sharedItemSort.getItem().getPath().length()).reversed())
-                    .toList()
-                    .getFirst();
+                    .toList();
 
-            if (sharedItemFolder == null || !sharedItemFolder.getFileRole().hasPermission(filePermission)) {
+            if (sharedItemFolderList.isEmpty() || !sharedItemFolderList.getFirst().getFileRole().hasPermission(filePermission)) {
                 throw new AccessDeniedException("User doesn't have permission to do such action.");
             }
         }
