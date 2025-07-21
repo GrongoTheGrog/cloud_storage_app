@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.services.items;
 
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.dto.FileDto;
+import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface FileService {
@@ -16,9 +17,8 @@ public interface FileService {
      * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException name conflict
      * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException if no folder can be found with given folder id
      * @throws com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException if authenticated user can't be found
-     * @return A FileDto object containing the file metadata stored in database
      */
-    FileDto createFile(MultipartFile requestFile, Long folderId, String requestFileName);
+    void createFile(MultipartFile requestFile, Long folderId, String requestFileName);
 
 
     /**
@@ -58,4 +58,15 @@ public interface FileService {
      */
     void deleteFile(File file);
 
+    /**
+     * Replaces an existing file in the cloud for the provided one.
+     * @param uploadFileForm the file form with the update information
+     * @param id the id of the file to be replaced
+     * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.AmazonException if an error occur while uploading to bucket
+     * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException name conflict
+     * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException if no folder can be found with given folder id
+     * @throws com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException if authenticated user can't be found
+     * @throws com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException if user doesn't have the permission to update the file
+     */
+    void updateFile(UploadFileForm uploadFileForm, Long id);
 }

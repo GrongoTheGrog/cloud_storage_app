@@ -7,6 +7,7 @@ import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
 import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
 import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
+import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
@@ -106,12 +107,6 @@ public class StorageIT {
                     "test".getBytes()
             );
 
-            S3Client mockS3 = mock(S3Client.class);
-            PutObjectResponse dummyResponse = mock(PutObjectResponse.class);
-
-            when(mockS3.putObject((PutObjectRequest) any(), (Path) any())).thenReturn(dummyResponse);
-
-
             mockMvc.perform(MockMvcRequestBuilders.multipart("/api/files")
                             .file(multipartFile)
                             .header("Authorization", "Bearer " + accessToken)
@@ -123,6 +118,39 @@ public class StorageIT {
             List<File> fileList = fileRepository.findAll();
             assertThat(fileList).hasSize(1);
 
+        }
+
+
+        @Test
+        public void testIfFileCanBeUpdated() throws Exception {
+            File beforeUpdateFile = getFile("beforeUpdateFile", null, currentAuthenticatedUser);
+            fileRepository.save(beforeUpdateFile);
+
+            MockMultipartFile afterUploadFile = new MockMultipartFile(
+                    "file",
+                    "afterUploadFile.txt",
+                    MediaType.TEXT_PLAIN_VALUE,
+                    "test".getBytes()
+            );
+
+            UploadFileForm uploadFileForm = UploadFileForm.builder()
+                    .file(afterUploadFile)
+                    .fileName("newFileName")
+                    .folderId(null)
+                    .build();
+
+            mockMvc.perform(MockMvcRequestBuilders.multipart("/api/files/" + beforeUpdateFile.getId())
+                    .file(afterUploadFile)
+                    .param("fileName", "newFileName")
+                    .header("Authorization", "Bearer " + accessToken)
+                    .with(request -> {request.setMethod("PUT"); return request;})
+
+            ).andExpect(status().isNoContent());
+
+            verify(s3Client).putObject((PutObjectRequest) any(), (Path) any());
+            List<File> fileList = fileRepository.findAll();
+            assertThat(fileList.isEmpty()).isFalse();
+            assertThat(fileList.getFirst().getName()).isEqualTo("newFileName");
         }
 
 

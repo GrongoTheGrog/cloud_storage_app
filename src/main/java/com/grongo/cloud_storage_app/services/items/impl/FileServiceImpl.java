@@ -3,7 +3,9 @@ package com.grongo.cloud_storage_app.services.items.impl;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
+import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.FileDto;
+import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -65,19 +69,9 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
-    public FileDto createFile(MultipartFile requestFile, Long folderId, String requestFileName) {
+    public void createFile(MultipartFile requestFile, Long folderId, String requestFileName) {
 
-        //writing the stream into disk now so I don't have to read that again later
-        final Path streamPath;
-        try {
-            streamPath = Files.createTempFile("streamfile_", null);
-            streamPath.toFile().deleteOnExit();
-
-            InputStream inputStream = requestFile.getInputStream();
-            Files.copy(inputStream, streamPath, StandardCopyOption.REPLACE_EXISTING);
-        }catch (IOException e){
-            throw new StorageException("Could not read file stream.", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        final Path streamPath = getTempPathFromFile(requestFile);
 
         User user = authService.getCurrentAuthenticatedUser();
 
@@ -108,25 +102,7 @@ public class FileServiceImpl implements FileService {
         fileRepository.save(file);
         storageService.updatePath(file);
 
-        try{
-            s3Client.putObject(
-                PutObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(file.getId().toString())
-                        .contentType(fileType)
-                        .build(),
-                streamPath
-            );
-
-            Files.deleteIfExists(streamPath);
-
-            return modelMapper.map(file, FileDto.class);
-
-        } catch (S3Exception e){
-            throw new AmazonException("Failed to upload file to S3 bucket.");
-        } catch (IOException e){
-            throw new StorageException("Failed to create a temp file.", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        uploadFile(streamPath, file);
     }
 
 
@@ -194,6 +170,75 @@ public class FileServiceImpl implements FileService {
             );
         }catch (S3Exception e){
             throw new AmazonException("Could not delete file on S3 bucket.");
+        }
+    }
+
+    @Override
+    public void updateFile(UploadFileForm uploadFileForm, Long id) {
+        Optional<File> optionalFile = fileRepository.findById(id);
+
+        if (optionalFile.isEmpty()){
+            createFile(uploadFileForm.getFile(), uploadFileForm.getFolderId(), uploadFileForm.getFileName());
+            return;
+        }
+
+        Path tempPath = getTempPathFromFile(uploadFileForm.getFile());
+
+        User authenticatedUser = authService.getCurrentAuthenticatedUser();
+        File file = optionalFile.get();
+
+        storageService.checkItemPermission(file, authenticatedUser, FilePermission.UPDATE);
+
+        String name = uploadFileForm.getFileName() != null ? uploadFileForm.getFileName() : file.getName();
+        String fileType = getFileType(tempPath);
+
+        String previousName = file.getName();
+
+        file.setFileType(fileType);
+        file.setName(name);
+        file.setSize(uploadFileForm.getFile().getSize());
+
+
+        if (!previousName.equals(file.getName())){
+            storageService.updatePath(file);
+        }else{
+            fileRepository.save(file);
+        }
+
+        uploadFile(tempPath, file);
+
+    }
+
+    private void uploadFile(Path tempPath, File file){
+        try{
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(file.getId().toString())
+                            .contentType(file.getFileType())
+                            .build(),
+                    tempPath
+            );
+
+            Files.deleteIfExists(tempPath);
+
+        } catch (S3Exception e){
+            throw new AmazonException("Failed to upload file to S3 bucket.");
+        } catch (IOException e){
+            throw new StorageException("Failed to create a temp file.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private Path getTempPathFromFile(MultipartFile multipartFile){
+        try {
+            Path streamPath = Files.createTempFile("streamfile_", null);
+            streamPath.toFile().deleteOnExit();
+
+            InputStream inputStream = multipartFile.getInputStream();
+            Files.copy(inputStream, streamPath, StandardCopyOption.REPLACE_EXISTING);
+            return streamPath;
+        }catch (IOException e){
+            throw new StorageException("Could not read file stream.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
