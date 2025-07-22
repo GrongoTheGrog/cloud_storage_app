@@ -41,7 +41,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id " + itemId));
 
 
-        if (sharedItemRequest.getFileRole() == FileRole.ADMIN_MODE && !authenticatedUser.equals(item.getOwner())){
+        if (sharedItemRequest.getFileRole() == FileRole.ADMIN_ROLE && !authenticatedUser.equals(item.getOwner())){
             throw new AccessDeniedException("User has to be the resource owner to grant admin permissions.");
         }
 
@@ -90,7 +90,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         }
 
         //  FIRST CHECK IF THE USER HAS ACCESS OVER THE NEW FILE
-        if (sharedItemRequest.getFileRole() == FileRole.ADMIN_MODE && !authenticatedUser.equals(item.getOwner())){
+        if (sharedItemRequest.getFileRole() == FileRole.ADMIN_ROLE && !authenticatedUser.equals(item.getOwner())){
             throw new AccessDeniedException("User has to be the resource owner to grant admin permissions.");
         }
         storageService.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);

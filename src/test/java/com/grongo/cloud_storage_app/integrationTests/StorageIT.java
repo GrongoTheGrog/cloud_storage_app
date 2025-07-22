@@ -1,20 +1,20 @@
 package com.grongo.cloud_storage_app.integrationTests;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
-import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
-import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
-import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
-import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
+import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.*;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.auth.JwtService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
+import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -32,7 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -57,7 +56,7 @@ public class StorageIT {
     UserRepository userRepository;
 
     @Autowired
-    AuthService authService;
+    StorageService storageService;
 
     @Autowired
     JwtService jwtService;
@@ -91,6 +90,11 @@ public class StorageIT {
 
         accessToken = jwtService.createAccessToken(user.getId(), "test").getAccessToken();
     }
+
+
+
+
+
 
     @Nested
     class FileTests {
@@ -201,6 +205,37 @@ public class StorageIT {
             assertThat(movedFile).isPresent();
             assertThat(movedFile.get().getFolder().getId()).isEqualTo(folder.getId());
         }
+
+        @Test
+        public void testIfPublicFileCanBeAccessed() throws Exception {
+            User resourceOwner = User.builder().email("owner").username("owner").build();
+            userRepository.save(resourceOwner);
+
+            File file = getFile("file", null, resourceOwner);
+            file.setIsPublic(true);
+            fileRepository.save(file);
+
+            storageService.checkItemPermission(file, currentAuthenticatedUser, FilePermission.VIEW);
+        }
+
+
+        @Test
+        public void testIfFileVisibilityCanBeUpdated() throws Exception {
+            File file = getFile("file", null, currentAuthenticatedUser);
+            fileRepository.save(file);
+
+            ItemVisibilityUpdateRequest request = new ItemVisibilityUpdateRequest(true);
+
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/visibility/" + file.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+                    .header("Authorization", "Bearer " + accessToken)
+            ).andExpect(status().isNoContent());
+
+            Optional<File> fileAfterUpdate = fileRepository.findById(file.getId());
+            assertThat(fileAfterUpdate).isPresent();
+            assertThat(fileAfterUpdate.get().getIsPublic()).isTrue();
+        }
     }
 
 
@@ -209,7 +244,7 @@ public class StorageIT {
 
         @Test
         public void testIfFolderCanBeCreated() throws Exception {
-            FolderRequest folderRequest = new FolderRequest("testFolder", null);
+            FolderRequest folderRequest = new FolderRequest("testFolder", null, false);
             String folderRequestJson = objectMapper.writeValueAsString(folderRequest);
 
             mockMvc.perform(MockMvcRequestBuilders.post("/api/folders")
@@ -242,10 +277,10 @@ public class StorageIT {
                     .content(moveItemRequestJson)
             ).andExpect(status().isNoContent());
 
-            FolderDto movedFolder = folderService.findFolderById(folder1.getId());
+            Optional<Folder> movedFolder = folderRepository.findById(folder1.getId());
 
-            FolderDto parentFolderDto = movedFolder.getFolder();
-            assertThat(parentFolderDto).isNull();
+            assertThat(movedFolder).isPresent();
+            assertThat(movedFolder.get().getFolder()).isNull();
         }
 
         @Test
@@ -267,10 +302,11 @@ public class StorageIT {
                     .content(moveItemRequestJson)
             ).andExpect(status().isNoContent());
 
-            FolderDto movedFolder = folderService.findFolderById(folder1.getId());
+            Optional<Folder> movedFolder = folderRepository.findById(folder1.getId());
 
-            FolderDto parentFolderDto = movedFolder.getFolder();
-            assertThat(parentFolderDto.getId()).isEqualTo(folder.getId());
+            assertThat(movedFolder).isPresent();
+            assertThat(movedFolder.get().getFolder()).isNotNull();
+            assertThat(movedFolder.get().getFolder().getId()).isEqualTo(folder.getId());
         }
 
 
@@ -290,6 +326,56 @@ public class StorageIT {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(moveItemRequestJson)
             ).andExpect(status().isConflict());
+
+        }
+
+        @Test
+        public void shouldFolderBeAccessedIfPublic() throws Exception {
+            User resourceOwner = User.builder().email("resourceOwnerTest").username("test").build();
+            userRepository.save(resourceOwner);
+
+
+            Folder folder = getFolder("folder", null, resourceOwner);
+            folder.setIsPublic(true);
+
+            folderRepository.save(folder);
+
+            mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + folder.getId())
+                    .header("Authorization", "Bearer " + accessToken)
+            ).andExpect(status().isOk());
+        }
+
+        @Test
+        public void shouldFolderAndSubItemsChangeVisibilityIfFolderChanges() throws Exception {
+            Folder rootFolder = getFolder("rootFolder", null, currentAuthenticatedUser);
+            folderRepository.save(rootFolder);
+
+            Folder subFolder1 = getFolder("subFolder1", rootFolder, currentAuthenticatedUser);
+            Folder subFolder2 = getFolder("subFolder2", rootFolder, currentAuthenticatedUser);
+            folderRepository.save(subFolder2);
+            folderRepository.save(subFolder1);
+
+            ItemVisibilityUpdateRequest request = new ItemVisibilityUpdateRequest(true);
+
+            mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/visibility/" + rootFolder.getId())
+                    .header("Authorization", "Bearer " + accessToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request))
+            ).andExpect(status().isNoContent());
+
+            Optional<Folder> rootFolderUpdated = folderRepository.findById(rootFolder.getId());
+            assertThat(rootFolderUpdated).isPresent();
+
+            List<Item> storedItems = storageService.getItemsInFolder(rootFolder.getId(), currentAuthenticatedUser.getId());
+            assertThat(storedItems).hasSize(2);
+
+
+            boolean areAllSubFoldersPublic = storedItems
+                    .stream()
+                    .allMatch(Item::getIsPublic);
+
+            assertThat(areAllSubFoldersPublic).isTrue();
+
 
         }
     }

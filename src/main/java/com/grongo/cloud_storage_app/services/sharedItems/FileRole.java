@@ -3,9 +3,9 @@ package com.grongo.cloud_storage_app.services.sharedItems;
 import java.util.EnumSet;
 
 public enum FileRole {
-    VIEW_MODE("VIEW"),
-    EDIT_MODE("EDIT"),
-    ADMIN_MODE("ADMIN");
+    VIEW_ROLE("VIEW"),
+    EDIT_ROLE("EDIT"),
+    ADMIN_ROLE("ADMIN");
 
     private final EnumSet<FilePermission> filePermissionSet;
 

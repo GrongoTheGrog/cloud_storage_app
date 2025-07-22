@@ -55,7 +55,21 @@ public class FolderServiceImpl implements FolderService {
             throw new ConflictStorageException("There is already a folder or file named " + folderRequest.getName());
         }
 
-        Folder folder = Folder.builder().name(folderRequest.getName()).folder(parentFolder).owner(user).build();
+        Boolean isPublic = folderRequest.getIsPublic();
+        if (isPublic == null){
+            if (parentFolder == null){
+                isPublic = false;
+            }else {
+                isPublic = parentFolder.getIsPublic();
+            }
+        }
+
+        Folder folder = Folder.builder()
+                .name(folderRequest.getName())
+                .folder(parentFolder)
+                .owner(user)
+                .isPublic(isPublic)
+                .build();
 
         folderRepository.save(folder);
         storageService.updatePath(folder);
@@ -82,7 +96,11 @@ public class FolderServiceImpl implements FolderService {
         User user = authService.getCurrentAuthenticatedUser();
         Long userId = user.getId();
 
-        List<Item> itemList = storageService.getItemsInFolder(folderId, userId);
+        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new FolderNotFoundException("Couldn't find folder."));
+
+        storageService.checkItemPermission(folder, user, FilePermission.VIEW);
+
+        List<Item> itemList = storageService.getItemsInFolder(folder, userId);
 
 
         return itemList.stream().map(item -> {
@@ -92,6 +110,8 @@ public class FolderServiceImpl implements FolderService {
                     modelMapper.map(item, FolderDto.class);
         }).toList();
     }
+
+
 
     @Override
     public void deleteFolder(Long folderId) {

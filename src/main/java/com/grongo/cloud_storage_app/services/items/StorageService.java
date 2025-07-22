@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.services.items;
 
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 
@@ -59,6 +60,16 @@ public interface StorageService {
      */
     List<Item> getItemsInFolder(Long folderId, Long userId);
 
+    /**Get all the items inside a given folder
+     *
+     *
+     * @param folder folder to get the items from
+     * @param user used in case folderId is null and items are in root of user
+     * @return A list of items
+     * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException could not find folder with given id
+     */
+    List<Item> getItemsInFolder(Folder folder, Long userId);
+
     /**Checks if a name already exists on a given directory
      *
      * @param folderId the id of the folder to be checked
@@ -84,4 +95,6 @@ public interface StorageService {
      * @throws com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException if user is not the owner
      */
     void checkItemPermission(Item item, User user, FilePermission filePermission);
+
+    void updateItemVisibility(ItemVisibilityUpdateRequest updateRequest, Long itemId);
 }

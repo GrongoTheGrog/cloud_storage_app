@@ -8,6 +8,7 @@ import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -51,5 +52,8 @@ public class Item extends TimeStamps {
 
     @Column(insertable = false, updatable = false)
     private String type;
+
+    @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isPublic = false;
 
 }

@@ -6,13 +6,16 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorage
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageException;
+import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
+import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
@@ -33,6 +36,7 @@ public class StorageServiceImpl implements StorageService {
     final private FolderRepository folderRepository;
     final private AuthService authService;
     final private OpenFolderCache openFolderCache;
+    final private UserRepository userRepository;
     final private SharedItemRepository sharedItemRepository;
 
     @Override
@@ -44,6 +48,7 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
+    @Transactional
     public void updatePath(Item item){
         Folder parentFolder = item.getFolder();
 
@@ -143,17 +148,25 @@ public class StorageServiceImpl implements StorageService {
     @Override
     @Transactional(readOnly = true)
     public List<Item> getItemsInFolder(Long id, Long userId) {
-        if (id == null){
+        Folder folder = id != null ?
+                folderRepository.findByIdWithStoredFiles(id).orElseThrow(() -> new FolderNotFoundException("Folder can't be found.")) :
+                null;
+
+        return getItemsInFolder(folder, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Item> getItemsInFolder(Folder folder, Long userId) {
+        if (folder == null){
             return itemRepository.findAllRootItems(userId);
         }
 
-        User user = authService.getCurrentAuthenticatedUser();
-        Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + id));
-
-        checkItemPermission(folder, user, FilePermission.VIEW);
-
         return folder.getStoredFiles();
     }
+
+
+
 
     @Override
     public boolean checkNameConflict(Long folderId, Long userId, String itemName) {
@@ -173,7 +186,11 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public void checkItemPermission(Item item, User user, FilePermission filePermission) {
+
+        if (Boolean.TRUE.equals(item.getIsPublic()) && filePermission.equals(FilePermission.VIEW)) return;
+
         if (!user.getId().equals(item.getOwner().getId())) {
 
             //first check if item is directly shared with user
@@ -200,4 +217,29 @@ public class StorageServiceImpl implements StorageService {
             }
         }
     }
+
+    @Override
+    public void updateItemVisibility(ItemVisibilityUpdateRequest itemVisibilityUpdateRequest, Long itemId){
+        User authenticatedUser = authService.getCurrentAuthenticatedUser();
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
+
+        checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
+
+        item.setIsPublic(itemVisibilityUpdateRequest.getIsPublic());
+
+        // propagate to children if folder
+        if (item instanceof Folder folder && folder.getStoredFiles() != null){
+            Queue<Item> queue = new LinkedList<>(folder.getStoredFiles());
+
+            while(!queue.isEmpty()){
+                Item popped = queue.poll();
+                popped.setIsPublic(itemVisibilityUpdateRequest.getIsPublic());
+                if (popped instanceof Folder subFolder && subFolder.getStoredFiles() != null){
+                    queue.addAll(subFolder.getStoredFiles());
+                }
+            }
+        }
+    }
+
+
 }

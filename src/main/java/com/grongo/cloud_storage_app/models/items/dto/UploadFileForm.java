@@ -19,5 +19,5 @@ public class UploadFileForm {
     @NotBlank
     private MultipartFile file;
     private String fileName;
-
+    private Boolean isPublic;
 }

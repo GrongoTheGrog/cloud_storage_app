@@ -13,4 +13,5 @@ import lombok.NoArgsConstructor;
 public class FolderRequest {
     private String name;
     private Long parentFolderId;
+    private Boolean isPublic;
 }

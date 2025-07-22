@@ -25,7 +25,8 @@ public class FileController {
         fileService.createFile(
                 uploadFileForm.getFile(),
                 uploadFileForm.getFolderId(),
-                uploadFileForm.getFileName()
+                uploadFileForm.getFileName(),
+                uploadFileForm.getIsPublic()
         );
     }
 

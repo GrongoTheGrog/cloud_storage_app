@@ -18,7 +18,7 @@ public interface FileService {
      * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException if no folder can be found with given folder id
      * @throws com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException if authenticated user can't be found
      */
-    void createFile(MultipartFile requestFile, Long folderId, String requestFileName);
+    void createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic);
 
 
     /**

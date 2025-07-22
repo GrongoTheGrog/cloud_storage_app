@@ -68,8 +68,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    @Transactional
-    public void createFile(MultipartFile requestFile, Long folderId, String requestFileName) {
+    public void createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic) {
 
         final Path streamPath = getTempPathFromFile(requestFile);
 
@@ -97,6 +96,7 @@ public class FileServiceImpl implements FileService {
                 .name(fileName)
                 .fileType(fileType)
                 .size(requestFile.getSize())
+                .isPublic(Boolean.TRUE.equals(isPublic))
                 .build();
 
         fileRepository.save(file);
@@ -178,7 +178,7 @@ public class FileServiceImpl implements FileService {
         Optional<File> optionalFile = fileRepository.findById(id);
 
         if (optionalFile.isEmpty()){
-            createFile(uploadFileForm.getFile(), uploadFileForm.getFolderId(), uploadFileForm.getFileName());
+            createFile(uploadFileForm.getFile(), uploadFileForm.getFolderId(), uploadFileForm.getFileName(), false);
             return;
         }
 

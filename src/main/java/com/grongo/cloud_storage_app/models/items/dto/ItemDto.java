@@ -27,5 +27,6 @@ public class ItemDto {
     private String type;
     private Date created_at;
     private Date updated_at;
+    private Boolean isPublic;
 
 }
