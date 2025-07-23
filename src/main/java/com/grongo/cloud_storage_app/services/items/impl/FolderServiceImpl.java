@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,7 +36,6 @@ public class FolderServiceImpl implements FolderService {
     private final ModelMapper modelMapper;
     private final StorageService storageService;
     private final AuthService authService;
-    private final OpenFolderCache openFolderCache;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -115,8 +115,13 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     public void deleteFolder(Long folderId) {
-        log.info("Deleting folder {}.", folderId);
-        folderRepository.deleteById(folderId);
+        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + folderId));
+        User authenticatedUser = authService.getCurrentAuthenticatedUser();
+
+        storageService.checkItemPermission(folder, authenticatedUser, FilePermission.DELETE);
+
+        storageService.updateSize(folder.getFolder(), -folder.getSize());
+        folderRepository.delete(folder);
     }
 
 

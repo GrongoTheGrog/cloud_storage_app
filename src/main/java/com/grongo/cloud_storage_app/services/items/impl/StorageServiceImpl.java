@@ -7,6 +7,7 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundE
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageException;
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
+import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
@@ -22,6 +23,7 @@ import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -91,12 +93,16 @@ public class StorageServiceImpl implements StorageService {
 
 
     @Override
+    @Transactional
     public void moveItem(Long itemId, Long newParentId) {
         User user = authService.getCurrentAuthenticatedUser();
 
         Item foundItem = itemRepository
                 .findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
+
+
+        updateSize(foundItem.getFolder(), -foundItem.getSize());
 
         Folder parentFolder = null;
         if (newParentId != null){
@@ -105,6 +111,8 @@ public class StorageServiceImpl implements StorageService {
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
 
             checkItemPermission(parentFolder, user, FilePermission.MOVE);
+
+            updateSize(parentFolder, foundItem.getSize());
         }
 
         checkItemPermission(foundItem, user, FilePermission.MOVE);
@@ -140,8 +148,6 @@ public class StorageServiceImpl implements StorageService {
         if (conflict) throw new ConflictStorageException("There is already a folder or file named " + name);
 
         foundItem.setName(name);
-        itemRepository.save(foundItem);
-
         updatePath(foundItem);
     }
 
@@ -164,8 +170,6 @@ public class StorageServiceImpl implements StorageService {
 
         return folder.getStoredFiles();
     }
-
-
 
 
     @Override
@@ -238,6 +242,15 @@ public class StorageServiceImpl implements StorageService {
                     queue.addAll(subFolder.getStoredFiles());
                 }
             }
+        }
+    }
+
+    @Override
+    public void updateSize(Item item, Long diff){
+        if (item != null){
+            Long prevSize = item.getSize() == null ? 0 : item.getSize();
+            item.setSize(prevSize + diff);
+            itemRepository.save(item);
         }
     }
 

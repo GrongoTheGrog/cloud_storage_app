@@ -7,17 +7,19 @@ import org.apache.tika.Tika;
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
 import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 
+@Component
 public class FileTypeDetector {
 
     private static final Tika tika = new Tika();
 
-    public static String getFileType(Path path) {
+    public String getFileType(Path path) {
         try{
             return tika.detect(path);
         }catch (IOException e){
@@ -26,7 +28,7 @@ public class FileTypeDetector {
 
     }
 
-    public static String getExtension(String mimeType) {
+    public String getExtension(String mimeType) {
         try{
             return MimeTypes.getDefaultMimeTypes().forName(mimeType).getExtension();
         }catch (MimeTypeException e){
