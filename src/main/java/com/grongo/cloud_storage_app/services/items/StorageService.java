@@ -64,7 +64,7 @@ public interface StorageService {
      *
      *
      * @param folder folder to get the items from
-     * @param user used in case folderId is null and items are in root of user
+     * @param userId used in case folderId is null and items are in root of user
      * @return A list of items
      * @throws com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException could not find folder with given id
      */
@@ -96,5 +96,12 @@ public interface StorageService {
      */
     void checkItemPermission(Item item, User user, FilePermission filePermission);
 
+    /**
+     * Update the items visibility to public or private
+     * @param updateRequest the dto containing the new visibility
+     * @param itemId the id of the item to be updated
+     */
     void updateItemVisibility(ItemVisibilityUpdateRequest updateRequest, Long itemId);
+
+    void updateSize(Item item, Long diff);
 }

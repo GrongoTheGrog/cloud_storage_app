@@ -11,6 +11,5 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class FileDto extends ItemDto{
-    private Long size;
     private String fileType;
 }

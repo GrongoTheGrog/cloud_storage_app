@@ -28,5 +28,6 @@ public class ItemDto {
     private Date created_at;
     private Date updated_at;
     private Boolean isPublic;
+    private Long size;
 
 }

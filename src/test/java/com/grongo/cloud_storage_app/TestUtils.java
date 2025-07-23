@@ -1,4 +1,4 @@
-package com.grongo.cloud_storage_app.testUtils;
+package com.grongo.cloud_storage_app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +14,7 @@ import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 
 public class TestUtils {
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static RegisterUser getRequestUser(){
         return RegisterUser.builder()
@@ -45,6 +45,7 @@ public class TestUtils {
                 .folder(parentFolder)
                 .name(name)
                 .owner(owner)
+                .size(0L)
                 .build();
 
     }
@@ -54,6 +55,7 @@ public class TestUtils {
                 .owner(owner)
                 .name(name)
                 .folder(parent)
+                .size(10L)
                 .build();
     }
 

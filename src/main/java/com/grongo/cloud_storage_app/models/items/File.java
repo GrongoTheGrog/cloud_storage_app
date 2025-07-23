@@ -17,8 +17,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @DiscriminatorValue("FILE")
 public class File extends Item{
-
-    private Long size;
     private String fileType;
 
 }

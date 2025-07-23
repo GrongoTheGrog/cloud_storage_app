@@ -10,6 +10,7 @@ import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.services.FileTypeDetector;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.DownloadLinkCache;
 import com.grongo.cloud_storage_app.services.items.FileService;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,17 +52,16 @@ public class FileServiceImpl implements FileService {
     @Value("${BUCKET_NAME}")
     private String bucketName;
 
-    private Duration linkTTL = Duration.ofMinutes(10);
+    private final Duration linkTTL = Duration.ofMinutes(10);
 
     private final S3Client s3Client;
-    private final UserRepository userRepository;
     private final FolderRepository folderRepository;
     private final StorageService storageService;
     private final FileRepository fileRepository;
-    private final ModelMapper modelMapper;
     private final S3Presigner s3Presigner;
     private final AuthService authService;
     private final DownloadLinkCache downloadLinkCache;
+    private final FileTypeDetector fileTypeDetector;
 
     @PostConstruct
     public void bucketCheck(){
@@ -84,22 +85,25 @@ public class FileServiceImpl implements FileService {
 
         String fileName = requestFileName == null ? requestFile.getOriginalFilename() : requestFileName;
 
+        String fileType = fileTypeDetector.getFileType(streamPath);
+
         if (storageService.checkNameConflict(folderId, user.getId(), fileName)){
             throw new ConflictStorageException("There is already a file named " + fileName + " in the given directory.");
         }
-
-        String fileType = getFileType(streamPath);
 
         File file = File.builder()
                 .owner(user)
                 .folder(folder)
                 .name(fileName)
-                .fileType(fileType)
                 .size(requestFile.getSize())
+                .fileType(fileType)
                 .isPublic(Boolean.TRUE.equals(isPublic))
                 .build();
 
+        storageService.updateSize(folder, file.getSize());
+
         fileRepository.save(file);
+
         storageService.updatePath(file);
 
         uploadFile(streamPath, file);
@@ -159,6 +163,7 @@ public class FileServiceImpl implements FileService {
         User user = authService.getCurrentAuthenticatedUser();
 
         storageService.checkItemPermission(file, user, FilePermission.DELETE);
+        storageService.updateSize(file.getFolder(), -file.getSize());
 
         fileRepository.deleteById(file.getId());
 
@@ -190,26 +195,29 @@ public class FileServiceImpl implements FileService {
         storageService.checkItemPermission(file, authenticatedUser, FilePermission.UPDATE);
 
         String name = uploadFileForm.getFileName() != null ? uploadFileForm.getFileName() : file.getName();
-        String fileType = getFileType(tempPath);
-
+        String fileType = fileTypeDetector.getFileType(tempPath);
         String previousName = file.getName();
+        Long previousSize = file.getSize();
+
 
         file.setFileType(fileType);
         file.setName(name);
         file.setSize(uploadFileForm.getFile().getSize());
 
-
+        //only update the path if the file has changed the name
         if (!previousName.equals(file.getName())){
             storageService.updatePath(file);
         }else{
             fileRepository.save(file);
         }
 
+        storageService.updateSize(file.getFolder(), file.getSize() - previousSize);
+
         uploadFile(tempPath, file);
 
     }
 
-    private void uploadFile(Path tempPath, File file){
+    public void uploadFile(Path tempPath, File file){
         try{
             s3Client.putObject(
                     PutObjectRequest.builder()
@@ -229,7 +237,7 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    private Path getTempPathFromFile(MultipartFile multipartFile){
+    public Path getTempPathFromFile(MultipartFile multipartFile){
         try {
             Path streamPath = Files.createTempFile("streamfile_", null);
             streamPath.toFile().deleteOnExit();

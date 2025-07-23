@@ -1,7 +1,6 @@
 package com.grongo.cloud_storage_app.integrationTests;
 
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
@@ -29,7 +28,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 
-import static com.grongo.cloud_storage_app.testUtils.TestUtils.*;
+import static com.grongo.cloud_storage_app.TestUtils.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest

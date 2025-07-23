@@ -56,4 +56,6 @@ public class Item extends TimeStamps {
     @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isPublic = false;
 
+    private Long size = 0L;
+
 }
