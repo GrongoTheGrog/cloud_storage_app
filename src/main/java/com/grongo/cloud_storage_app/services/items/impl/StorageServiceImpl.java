@@ -13,10 +13,7 @@ import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.repositories.FolderRepository;
-import com.grongo.cloud_storage_app.repositories.ItemRepository;
-import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.repositories.*;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
@@ -37,9 +34,8 @@ public class StorageServiceImpl implements StorageService {
     final private ItemRepository itemRepository;
     final private FolderRepository folderRepository;
     final private AuthService authService;
-    final private OpenFolderCache openFolderCache;
-    final private UserRepository userRepository;
     final private SharedItemRepository sharedItemRepository;
+    final private TagRepository tagRepository;
 
     @Override
     public void updatePath(Long itemId) {

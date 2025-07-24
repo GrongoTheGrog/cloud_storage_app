@@ -4,6 +4,7 @@ package com.grongo.cloud_storage_app.models.items;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.grongo.cloud_storage_app.models.TimeStamps;
+import com.grongo.cloud_storage_app.models.tag.TagJoin;
 import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,6 +12,8 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -57,5 +60,9 @@ public class Item extends TimeStamps {
     private Boolean isPublic = false;
 
     private Long size = 0L;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "join_item_tag_id")
+    private Set<TagJoin> tagJoins;
 
 }

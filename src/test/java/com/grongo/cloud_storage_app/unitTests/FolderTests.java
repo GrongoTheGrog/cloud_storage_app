@@ -3,7 +3,6 @@ package com.grongo.cloud_storage_app.unitTests;
 
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
-import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;

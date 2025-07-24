@@ -1,15 +1,19 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
 import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
 import com.grongo.cloud_storage_app.models.items.dto.RenameItemRequest;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.parameters.P;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * Controller that holds the logic suitable for both files and folders
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class ItemController {
 
     private final StorageService storageService;
+    private final TagService tagService;
 
     @PatchMapping("/move/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -48,5 +53,21 @@ public class ItemController {
         storageService.updateItemVisibility(itemVisibilityUpdateRequest, itemId);
     }
 
+    @PatchMapping("/{itemId}/tag/{tagId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void handleTagBinding(
+            @PathVariable Long itemId,
+            @PathVariable Long tagId
+    ){
+        tagService.bindTagToFile(tagId, itemId);
+    }
 
+    @DeleteMapping("/{itemId}/tag/{tagId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleTagUnbind(
+            @PathVariable Long itemId,
+            @PathVariable Long tagId
+    ){
+        tagService.unbindTagFromFile(tagId, itemId);
+    }
 }

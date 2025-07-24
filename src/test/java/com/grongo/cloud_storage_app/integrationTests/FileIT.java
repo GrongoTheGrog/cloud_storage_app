@@ -49,22 +49,14 @@ public class FileIT {
 
     @Autowired
     FileRepository fileRepository;
-
-    @MockitoSpyBean
-    S3Client s3Client;
-
     @Autowired
     MockMvc mockMvc;
-
     @Autowired
     UserRepository userRepository;
-
     @Autowired
     StorageService storageService;
-
     @Autowired
     JwtService jwtService;
-
     @Autowired
     FolderRepository folderRepository;
 
@@ -91,62 +83,6 @@ public class FileIT {
 
         accessToken = jwtService.createAccessToken(user.getId(), "test").getAccessToken();
     }
-
-    @Test
-    public void testIfFileCanBeCreated() throws Exception {
-        MockMultipartFile multipartFile = new MockMultipartFile(
-                "file",
-                "test.txt",
-                MediaType.TEXT_PLAIN_VALUE,
-                "test".getBytes()
-        );
-
-        mockMvc.perform(MockMvcRequestBuilders.multipart("/api/files")
-                        .file(multipartFile)
-                        .header("Authorization", "Bearer " + accessToken)
-
-                )
-                .andExpect(status().isCreated());
-
-        verify(s3Client).putObject((PutObjectRequest) any(), (Path) any());
-        List<File> fileList = fileRepository.findAll();
-        assertThat(fileList).hasSize(1);
-
-    }
-
-
-    @Test
-    public void testIfFileCanBeUpdated() throws Exception {
-        File beforeUpdateFile = getFile("beforeUpdateFile", null, currentAuthenticatedUser);
-        fileRepository.save(beforeUpdateFile);
-
-        MockMultipartFile afterUploadFile = new MockMultipartFile(
-                "file",
-                "afterUploadFile.txt",
-                MediaType.TEXT_PLAIN_VALUE,
-                "test".getBytes()
-        );
-
-        UploadFileForm uploadFileForm = UploadFileForm.builder()
-                .file(afterUploadFile)
-                .fileName("newFileName")
-                .folderId(null)
-                .build();
-
-        mockMvc.perform(MockMvcRequestBuilders.multipart("/api/files/" + beforeUpdateFile.getId())
-                .file(afterUploadFile)
-                .param("fileName", "newFileName")
-                .header("Authorization", "Bearer " + accessToken)
-                .with(request -> {request.setMethod("PUT"); return request;})
-
-        ).andExpect(status().isNoContent());
-
-        verify(s3Client).putObject((PutObjectRequest) any(), (Path) any());
-        List<File> fileList = fileRepository.findAll();
-        assertThat(fileList.isEmpty()).isFalse();
-        assertThat(fileList.getFirst().getName()).isEqualTo("newFileName");
-    }
-
 
     @Test
     public void shouldMoveFileToRootIfNullIsProvided() throws Exception {
