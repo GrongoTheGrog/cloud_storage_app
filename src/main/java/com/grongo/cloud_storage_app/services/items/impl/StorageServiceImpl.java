@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
@@ -10,8 +11,11 @@ import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundExcept
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
+import com.grongo.cloud_storage_app.models.items.dto.QueryItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
+import com.grongo.cloud_storage_app.models.tag.Tag;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.*;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
@@ -19,6 +23,8 @@ import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -35,6 +41,7 @@ public class StorageServiceImpl implements StorageService {
     final private FolderRepository folderRepository;
     final private AuthService authService;
     final private SharedItemRepository sharedItemRepository;
+    final private ModelMapper modelMapper;
     final private TagRepository tagRepository;
 
     @Override
@@ -250,5 +257,24 @@ public class StorageServiceImpl implements StorageService {
         }
     }
 
+    @Override
+    public List<ItemDto> queryFiles(QueryItemDto queryItemDto) {
+        User authenticatedUser = authService.getCurrentAuthenticatedUser();
 
+        List<Item> itemList = itemRepository.queryItem(
+                queryItemDto.getMaxDate(),
+                queryItemDto.getMinDate(),
+                queryItemDto.getMaxBytes(),
+                queryItemDto.getMinBytes(),
+                queryItemDto.getName(),
+                queryItemDto.getType(),
+                queryItemDto.getParentId(),
+                queryItemDto.getTagIds(),
+                authenticatedUser.getId()
+        );
+
+        List<Tag> tagList = tagRepository.query();
+
+        return itemList.stream().map(item -> modelMapper.map(item, ItemDto.class)).toList();
+    }
 }

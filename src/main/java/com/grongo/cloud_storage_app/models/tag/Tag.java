@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,8 +31,7 @@ public class Tag {
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id")
     private User user;
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "join_item_tag_id")
-    private Set<TagJoin> tagJoins;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "tag")
+    private Set<TagJoin> tagJoins = new HashSet<>();
 
 }

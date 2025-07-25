@@ -16,4 +16,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             @Param("tagName") String tagName,
             @Param("userId") Long userId
     );
+
+    @Query("SELECT t FROM Tag t JOIN t.tagJoins tj")
+    public List<Tag> query();
 }

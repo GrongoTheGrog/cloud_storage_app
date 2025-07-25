@@ -41,6 +41,7 @@ public class TagServiceImpl implements TagService {
         Tag tag = Tag.builder()
                 .name(tagCreationDto.getName())
                 .hex_color(tagCreationDto.getHex_color())
+                .user(authenticatedUser)
                 .build();
 
         tagRepository.save(tag);

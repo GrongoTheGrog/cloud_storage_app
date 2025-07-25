@@ -1,10 +1,7 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
-import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
-import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
-import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
-import com.grongo.cloud_storage_app.models.items.dto.RenameItemRequest;
+import com.grongo.cloud_storage_app.models.items.dto.*;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
@@ -69,5 +66,13 @@ public class ItemController {
             @PathVariable Long tagId
     ){
         tagService.unbindTagFromFile(tagId, itemId);
+    }
+
+    @GetMapping("/query")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ItemDto> handleItemQuery(
+            QueryItemDto queryItemDto
+            ){
+        return storageService.queryFiles(queryItemDto);
     }
 }

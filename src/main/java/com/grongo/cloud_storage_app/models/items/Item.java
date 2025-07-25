@@ -13,6 +13,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
@@ -61,8 +62,7 @@ public class Item extends TimeStamps {
 
     private Long size = 0L;
 
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "join_item_tag_id")
-    private Set<TagJoin> tagJoins;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "item")
+    private Set<TagJoin> tagJoins = new HashSet<>();
 
 }

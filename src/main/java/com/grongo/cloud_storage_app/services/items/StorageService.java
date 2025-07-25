@@ -2,7 +2,9 @@ package com.grongo.cloud_storage_app.services.items;
 
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
+import com.grongo.cloud_storage_app.models.items.dto.QueryItemDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 
@@ -104,4 +106,6 @@ public interface StorageService {
     void updateItemVisibility(ItemVisibilityUpdateRequest updateRequest, Long itemId);
 
     void updateSize(Item item, Long diff);
+
+    List<ItemDto> queryFiles(QueryItemDto queryItemDto);
 }

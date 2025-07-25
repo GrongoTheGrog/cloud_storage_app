@@ -3,10 +3,7 @@ package com.grongo.cloud_storage_app.models.tag;
 
 import com.grongo.cloud_storage_app.models.items.Item;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Data
@@ -20,8 +17,12 @@ public class TagJoin {
     private Long id;
     @ManyToOne
     @JoinColumn(name = "item_id")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Item item;
     @ManyToOne
     @JoinColumn(name = "tag_id")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Tag tag;
 }

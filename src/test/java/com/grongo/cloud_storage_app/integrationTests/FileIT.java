@@ -5,7 +5,6 @@ import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
 import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
-import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
@@ -19,27 +18,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
 import static com.grongo.cloud_storage_app.TestUtils.getFile;
 import static com.grongo.cloud_storage_app.TestUtils.getFolder;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
