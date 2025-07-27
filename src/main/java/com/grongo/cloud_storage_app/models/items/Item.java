@@ -63,6 +63,6 @@ public class Item extends TimeStamps {
     private Long size = 0L;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "item")
-    private Set<TagJoin> tagJoins = new HashSet<>();
+    private Set<TagJoin> tagJoins;
 
 }

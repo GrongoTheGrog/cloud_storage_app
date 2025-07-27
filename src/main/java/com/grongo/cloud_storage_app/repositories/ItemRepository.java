@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -29,19 +30,21 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             "(:maxBytes IS NULL OR i.size < :maxBytes) AND " +
             "(:minBytes IS NULL OR i.size > :minBytes) AND " +
             "(:name IS NULL OR i.name LIKE CONCAT('%', :name, '%')) AND " +
-            "(:types IS NULL OR (i.type = 'FILE' AND i.fileType IN :types)) AND " +
+            "(:fileTypes IS NULL OR (i.type = 'FILE' AND i.fileType IN :fileTypes)) AND " +
             "(:folderId = -1 OR f.id = :folderId) AND " +
             "(:tagIds IS NULL OR t.id IN :tagIds) AND " +
+            "(:type IS NULL OR i.type = :type) AND " +
             "o.id = :userId")
     public List<Item> queryItem(
-            @Param("maxDate") Date maxDate,
-            @Param("minDate") Date minDate,
+            @Param("maxDate") LocalDateTime maxDate,
+            @Param("minDate") LocalDateTime minDate,
             @Param("maxBytes") Long maxBytes,
             @Param("minBytes") Long minBytes,
             @Param("name") String name,
-            @Param("types") List<MediaType> types,
+            @Param("fileTypes") List<String> fileTypes,
             @Param("folderId") Long folderId,
             @Param("tagIds") List<Long> tagIds,
-            @Param("userId") Long userId
+            @Param("userId") Long userId,
+            @Param("type") String type
             );
 }
