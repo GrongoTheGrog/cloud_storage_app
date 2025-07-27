@@ -2,7 +2,9 @@ package com.grongo.cloud_storage_app.services.items;
 
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
+import com.grongo.cloud_storage_app.models.items.dto.QueryItemDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 
@@ -103,5 +105,17 @@ public interface StorageService {
      */
     void updateItemVisibility(ItemVisibilityUpdateRequest updateRequest, Long itemId);
 
+    /**
+     *  Just adds the diff to the provided item's size property and saves to the db
+     * @param item the item to be updated
+     * @param diff the amount to add (signed number btw)
+     */
     void updateSize(Item item, Long diff);
+
+    /**
+     * Queries items based on several attributes described in the QueryItemDto
+     * @param queryItemDto the dto containing filter info
+     * @return A list of item DTOs
+     */
+    List<ItemDto> queryFiles(QueryItemDto queryItemDto);
 }

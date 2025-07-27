@@ -85,27 +85,26 @@ public class StorageIT {
 
     @Test
     public void shouldItemPathBeUpdatedIfMoved() throws Exception {
-        FolderRequest folderRequest = getFolderRequest("folder", null);
-        FolderDto folderDto = folderService.createFolder(folderRequest);
+        Folder folder = getFolder("folder", null, currentAuthenticatedUser);
+        folder.setPath("/folder");
+        folderRepository.save(folder);
 
-        FolderRequest folderRequest1 = getFolderRequest("folder1", folderDto.getId());
-        FolderDto folderDto1 = folderService.createFolder(folderRequest1);
-
-        assertThat(folderDto1.getPath()).isEqualTo("/folder/folder1");
+        Folder folder1 = getFolder("folder1", folder, currentAuthenticatedUser);
+        folder1.setPath("/folder1");
+        folderRepository.save(folder1);
 
         MoveItemRequest moveItemRequest = new MoveItemRequest(null);
         String moveItemRequestJson = objectMapper.writeValueAsString(moveItemRequest);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + folderDto1.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + folder1.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moveItemRequestJson)
         ).andExpect(status().isNoContent());
 
-        Optional<Folder> folder = folderRepository.findById(folderDto1.getId());
-        assertThat(folder).isPresent();
-
-        assertThat(folder.get().getPath()).isEqualTo("/folder1");
+        Optional<Folder> foundFolder = folderRepository.findById(folder1.getId());
+        assertThat(foundFolder).isPresent();
+        assertThat(foundFolder.get().getPath()).isEqualTo("/folder1");
     }
 
 }

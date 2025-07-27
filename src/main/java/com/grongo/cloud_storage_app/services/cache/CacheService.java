@@ -76,6 +76,7 @@ public abstract class CacheService <T> {
                 .leftPushAll(key, list)
                 .subscribe(v -> {
                     redisTemplate.expire(key, duration);
+                    log.info("Set list {} as key {} with TTL of {} seconds.", list.toString(), key, duration.getSeconds());
                 });
 
     }

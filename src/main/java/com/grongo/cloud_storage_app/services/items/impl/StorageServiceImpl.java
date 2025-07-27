@@ -1,6 +1,8 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.grongo.cloud_storage_app.exceptions.HttpException;
 import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
@@ -10,23 +12,28 @@ import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundExcept
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
+import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
+import com.grongo.cloud_storage_app.models.items.dto.QueryItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
+import com.grongo.cloud_storage_app.models.tag.Tag;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.repositories.FolderRepository;
-import com.grongo.cloud_storage_app.repositories.ItemRepository;
-import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.repositories.*;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
+import com.grongo.cloud_storage_app.services.cache.CacheKeys;
 import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
+import com.grongo.cloud_storage_app.services.cache.impl.QueryRequestCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.*;
 
 @Service
@@ -37,9 +44,9 @@ public class StorageServiceImpl implements StorageService {
     final private ItemRepository itemRepository;
     final private FolderRepository folderRepository;
     final private AuthService authService;
-    final private OpenFolderCache openFolderCache;
-    final private UserRepository userRepository;
     final private SharedItemRepository sharedItemRepository;
+    final private ModelMapper modelMapper;
+    final private QueryRequestCache queryRequestCache;
 
     @Override
     public void updatePath(Long itemId) {
@@ -254,5 +261,70 @@ public class StorageServiceImpl implements StorageService {
         }
     }
 
+    @Override
+    public List<ItemDto> queryFiles(QueryItemDto queryItemDto) {
+        User authenticatedUser = authService.getCurrentAuthenticatedUser();
 
+        int hashedQueryDto = queryItemDto.hashCode();
+
+        List<ItemDto> queryCache = queryRequestCache.getKeyList(CacheKeys.itemQueryKey(hashedQueryDto));
+        if (!queryCache.isEmpty()) return queryCache;
+
+        if (
+                queryItemDto.getMaxBytes() != null &&
+                queryItemDto.getMinBytes() != null &&
+                queryItemDto.getMaxBytes() < queryItemDto.getMinBytes()
+        ) throw new HttpException("Maximum file size can't be less then minimum file size.", HttpStatus.BAD_REQUEST);
+
+        if (
+                queryItemDto.getMaxDate() != null &&
+                queryItemDto.getMinDate() != null &&
+                queryItemDto.getMaxDate().isBefore(queryItemDto.getMinDate())
+        ) throw new HttpException("Maximum creation date can't be before then minimum creation date.", HttpStatus.BAD_REQUEST);
+
+        if (
+                queryItemDto.getType() != null &&
+                queryItemDto.getType().equals("FOLDER") &&
+                queryItemDto.getFileType() != null
+        ) throw new HttpException("File type can only be used for files.", HttpStatus.BAD_REQUEST);
+
+
+
+        List<Item> itemList = itemRepository.queryItem(
+                queryItemDto.getMaxDate(),
+                queryItemDto.getMinDate(),
+                queryItemDto.getMaxBytes(),
+                queryItemDto.getMinBytes(),
+                queryItemDto.getName(),
+                queryItemDto.getFileType(),
+                queryItemDto.getParentId(),
+                queryItemDto.getTagId(),
+                authenticatedUser.getId(),
+                queryItemDto.getType()
+        );
+
+        List<Item> sharedItems = sharedItemRepository.querySharedItems(
+                queryItemDto.getMaxDate(),
+                queryItemDto.getMinDate(),
+                queryItemDto.getMaxBytes(),
+                queryItemDto.getMinBytes(),
+                queryItemDto.getName(),
+                queryItemDto.getFileType(),
+                queryItemDto.getParentId(),
+                queryItemDto.getTagId(),
+                authenticatedUser.getId(),
+                queryItemDto.getType()
+        ).stream().map(SharedItem::getItem).toList();
+
+        itemList.addAll(sharedItems);
+
+        List<ItemDto> itemDtoList = itemList.stream().map(item -> modelMapper.map(item, ItemDto.class)).toList();
+
+        if (!itemDtoList.isEmpty()){
+            queryRequestCache.setKeyList(CacheKeys.itemQueryKey(hashedQueryDto), itemDtoList, Duration.ofMinutes(10));
+        }
+
+
+        return itemDtoList;
+    }
 }

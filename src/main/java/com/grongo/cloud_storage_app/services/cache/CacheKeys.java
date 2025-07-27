@@ -12,4 +12,5 @@ public class CacheKeys {
         return "file:" + fileId;
     }
 
+    public static String itemQueryKey(int hashedDto){return "itemQuery:" + hashedDto; }
 }
