@@ -27,6 +27,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -65,11 +67,9 @@ public class QueryIT {
     private SharedItemRepository sharedItemRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String baseUrl = "/api/items/query";
 
     private String accessToken;
     private User currentAuthenticatedUser;
-
 
     static RedisContainer redisContainer;
 
@@ -104,6 +104,22 @@ public class QueryIT {
 
     private final TypeReference<List<ItemDto>> typeRef = new TypeReference<List<ItemDto>>() {};
 
+
+    private List<ItemDto> fetchQuery() throws Exception {
+        return fetchQuery("");
+    }
+    private List<ItemDto> fetchQuery(String query) throws Exception {
+        String baseUrl = "/api/items/query";
+        MvcResult mvcRequest =  mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + query)
+                        .header("Authorization", "Bearer " + accessToken)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andReturn();
+
+        return objectMapper.readValue(mvcRequest.getResponse().getContentAsString(), typeRef);
+    }
+
     @Test
     public void testIfSizeFilterIsWorking() throws Exception {
         File file1 = getFile("file1", null, currentAuthenticatedUser);
@@ -115,26 +131,12 @@ public class QueryIT {
         fileRepository.save(file2);
 
         //check for file1
-        MvcResult mvcRequest1 =  mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?minBytes=700")
-                .header("Authorization", "Bearer " + accessToken)
-        )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andReturn();
-
-        List<ItemDto> resultList1 = objectMapper.readValue(mvcRequest1.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> resultList1 = fetchQuery("?minBytes=700");
         assertThat(resultList1).hasSize(1);
         assertThat(resultList1.getFirst().getId()).isEqualTo(file1.getId());
 
         //check for file2
-        MvcResult mvcRequest2 =  mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?maxBytes=700")
-                        .header("Authorization", "Bearer " + accessToken)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andReturn();
-
-        List<ItemDto> resultList2 = objectMapper.readValue(mvcRequest2.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> resultList2 = fetchQuery("?maxBytes=700");
         assertThat(resultList2).hasSize(1);
         assertThat(resultList2.getFirst().getId()).isEqualTo(file2.getId());
     }
@@ -155,26 +157,12 @@ public class QueryIT {
         fileRepository.save(file2);
 
         //  Test file1
-        MvcResult result1 = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?maxDate=" + isoString)
-                .header("Authorization", "Bearer " + accessToken)
-        )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andReturn();
-
-        List<ItemDto> list1 = objectMapper.readValue(result1.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> list1 = fetchQuery("?maxDate=" + isoString);
         assertThat(list1).hasSize(1);
         assertThat(list1.getFirst().getId()).isEqualTo(file1.getId());
 
         //  Test file2
-        MvcResult result2 = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?minDate=" + isoString)
-                        .header("Authorization", "Bearer " + accessToken)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andReturn();
-
-        List<ItemDto> list2 = objectMapper.readValue(result2.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> list2 = fetchQuery("?minDate=" + isoString);
         assertThat(list2).hasSize(1);
         assertThat(list2.getFirst().getId()).isEqualTo(file2.getId());
     }
@@ -187,21 +175,12 @@ public class QueryIT {
         folderRepository.save(folder);
 
         //  Handle file query
-        MvcResult fileMvcResult = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?type=FILE")
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> fileList = objectMapper.readValue(fileMvcResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> fileList = fetchQuery("?type=FILE");
         assertThat(fileList.size()).isEqualTo(1);
         assertThat(fileList.getFirst().getId()).isEqualTo(file.getId());
 
-
         //  Handle folder query
-        MvcResult folderResult = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?type=FOLDER")
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> folderList = objectMapper.readValue(folderResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> folderList = fetchQuery("?type=FOLDER");
         assertThat(folderList.size()).isEqualTo(1);
         assertThat(folderList.getFirst().getId()).isEqualTo(folder.getId());
     }
@@ -219,32 +198,19 @@ public class QueryIT {
         fileRepository.save(pdfFile);
 
         //  QUERY GIF FILE
-        MvcResult gifResult = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?fileType=" + MediaType.IMAGE_GIF_VALUE)
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> gifFileList = objectMapper.readValue(gifResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> gifFileList = fetchQuery("?fileType=" + MediaType.IMAGE_GIF_VALUE);
         assertThat(gifFileList.size()).isEqualTo(1);
         assertThat(gifFileList.getFirst().getId()).isEqualTo(gifFile.getId());
 
 
         //  QUERY PDF FILE
-        MvcResult pdfResult = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?fileType=" + MediaType.APPLICATION_PDF_VALUE)
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> pdfFileList = objectMapper.readValue(pdfResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> pdfFileList = fetchQuery("?fileType=" + MediaType.APPLICATION_PDF_VALUE);
         assertThat(pdfFileList.size()).isEqualTo(1);
         assertThat(pdfFileList.getFirst().getId()).isEqualTo(pdfFile.getId());
 
 
         //  QUERY BOTH FILES
-        MvcResult bothFilesResult = mockMvc.perform(MockMvcRequestBuilders
-                .get(baseUrl + "?fileType=" + MediaType.APPLICATION_PDF_VALUE + "&fileType=" + MediaType.IMAGE_GIF_VALUE)
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> bothFilesList = objectMapper.readValue(bothFilesResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> bothFilesList = fetchQuery("?fileType=" + MediaType.APPLICATION_PDF_VALUE + "&fileType=" + MediaType.IMAGE_GIF_VALUE);
         assertThat(bothFilesList.size()).isEqualTo(2);
 
         boolean areAllIdsMatching = bothFilesList
@@ -266,11 +232,7 @@ public class QueryIT {
         fileRepository.save(file2);
 
         //  QUERY FILE1 BY NAME
-        MvcResult file1Result = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?name=" + file1.getName())
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> file1List = objectMapper.readValue(file1Result.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> file1List = fetchQuery("?name=" + file1.getName());
         assertThat(file1List.size()).isEqualTo(1);
         assertThat(file1List.getFirst().getId()).isEqualTo(file1.getId());
     }
@@ -300,32 +262,19 @@ public class QueryIT {
 
 
         //  QUERY FILE1 BY TAG1
-        MvcResult file1Result = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?tagId=" + tag1.getId())
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> file1List = objectMapper.readValue(file1Result.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> file1List = fetchQuery("?tagId=" + tag1.getId());
         assertThat(file1List).hasSize(1);
         assertThat(file1List.getFirst().getId()).isEqualTo(file1.getId());
 
 
         //  QUERY FILE 2 BY TAG2
-        MvcResult file2Result = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + "?tagId=" + tag2.getId())
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> file2List = objectMapper.readValue(file2Result.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> file2List = fetchQuery("?tagId=" + tag2.getId());
         assertThat(file2List).hasSize(1);
         assertThat(file2List.getFirst().getId()).isEqualTo(file2.getId());
 
 
         //  QUERY BOTH FILES BY TAG1 AND TAG2
-        MvcResult bothFilesResult = mockMvc.perform(MockMvcRequestBuilders
-                .get(baseUrl + "?tagId=" + tag1.getId() + "&tagId=" + tag2.getId())
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-        List<ItemDto> bothItemsList = objectMapper.readValue(bothFilesResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> bothItemsList = fetchQuery("?tagId=" + tag1.getId() + "&tagId=" + tag2.getId());
         assertThat(bothItemsList).hasSize(2);
 
         boolean areAllIdsMatching = bothItemsList.stream().allMatch(itemDto ->
@@ -354,12 +303,7 @@ public class QueryIT {
 
         sharedItemRepository.save(sharedItem);
 
-        MvcResult sharedItemResult = mockMvc.perform(MockMvcRequestBuilders.get(baseUrl)
-                .header("Authorization", "Bearer " + accessToken)
-        ).andExpect(status().isOk()).andExpect(jsonPath("$").isArray()).andReturn();
-
-
-        List<ItemDto> sharedItemList = objectMapper.readValue(sharedItemResult.getResponse().getContentAsString(), typeRef);
+        List<ItemDto> sharedItemList = fetchQuery();
         assertThat(sharedItemList).hasSize(1);
         assertThat(sharedItemList.getFirst().getId()).isEqualTo(sharedFile.getId());
     }

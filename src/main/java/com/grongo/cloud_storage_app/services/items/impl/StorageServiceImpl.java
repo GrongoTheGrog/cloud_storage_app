@@ -21,7 +21,6 @@ import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.*;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.CacheKeys;
-import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.cache.impl.QueryRequestCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;

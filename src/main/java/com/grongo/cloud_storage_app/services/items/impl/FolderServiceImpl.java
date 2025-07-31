@@ -12,7 +12,6 @@ import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
-import com.grongo.cloud_storage_app.services.cache.impl.OpenFolderCache;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
@@ -24,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,8 +100,8 @@ public class FolderServiceImpl implements FolderService {
 
         storageService.checkItemPermission(folder, user, FilePermission.VIEW);
 
-        List<Item> itemList = storageService.getItemsInFolder(folder, userId);
 
+        List<Item> itemList = storageService.getItemsInFolder(folder, userId);
 
         return itemList.stream().map(item -> {
             item.setFolder(null);

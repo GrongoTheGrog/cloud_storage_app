@@ -128,7 +128,6 @@ public class FileServiceImpl implements FileService {
             return cachedLink;
         }
 
-
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileId.toString())
