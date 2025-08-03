@@ -95,6 +95,7 @@ public class JwtServiceImpl implements JwtService {
         Cookie tokenCookie = new Cookie("rt_session_id", id);
         tokenCookie.setHttpOnly(true);
         tokenCookie.setMaxAge(refreshTokenExpiration);
+        tokenCookie.setAttribute("SameSite", "Lax");
         tokenCookie.setSecure(false);
 
         return tokenCookie;

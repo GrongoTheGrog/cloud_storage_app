@@ -12,6 +12,7 @@ import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -45,8 +46,18 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ExceptionResponse invalidBody(ConstraintViolationException e){
         return ExceptionResponse.builder()
-                .status(409)
+                .status(400)
                 .error(HttpStatus.BAD_REQUEST.name())
+                .message(e.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler({BadCredentialsException.class})
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ExceptionResponse badCredentials(BadCredentialsException e){
+        return ExceptionResponse.builder()
+                .status(401)
+                .error(HttpStatus.UNAUTHORIZED.name())
                 .message(e.getMessage())
                 .build();
     }
@@ -58,6 +69,7 @@ public class ErrorHandler {
         e.getBindingResult().getFieldErrors().forEach(error ->
                 errors.put(error.getField(), error.getDefaultMessage())
         );
+        errors.put("isFields", "true");
 
         return errors;
     }

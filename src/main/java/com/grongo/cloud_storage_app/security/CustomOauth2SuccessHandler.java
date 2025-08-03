@@ -14,12 +14,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 
 //  That custom Oauth2 success handler lies at the end of the oauth login lifecycle.
 //
@@ -32,6 +38,9 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
     private final JwtServiceImpl jwtService;
     private final ModelMapper modelMapper;
     private final UserServiceImpl userService;
+
+    @Value("${FRONTEND_REDIRECT_URI}")
+    String frontendRedirectString;
 
     @Override
     public void onAuthenticationSuccess(
@@ -58,9 +67,18 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
 
         response.addCookie(refreshTokenSessionCookie);
 
-        response.setStatus(203);
-        response.setContentType("application/json");
-        response.getWriter().write(new ObjectMapper().writeValueAsString(accessTokenResponse));
+        response.setStatus(301);
+        String redirectUrl = UriComponentsBuilder
+                .fromUri(URI.create(frontendRedirectString))
+                .queryParam("username", username)
+                .queryParam("id", userDto.getId().toString())
+                .queryParam("access_token", accessTokenResponse.getAccessToken())
+                .queryParam("email", userDto.getEmail())
+                .queryParam("picture", userDto.getPicture())
+                .build()
+                .toUriString();
+        response.setHeader("Location", redirectUrl);
+        response.setStatus(301);
     }
 }
 

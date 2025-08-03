@@ -3,9 +3,9 @@ package com.grongo.cloud_storage_app.controllers;
 
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
-import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
+import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUserResponse;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
@@ -34,17 +34,31 @@ public class AuthController {
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public String signup(
-            @Validated @RequestBody RegisterUser registerUser
+    public ResponseEntity<AuthenticateUserResponse> signup(
+            @Validated @RequestBody RegisterUser registerUser,
+            HttpServletResponse response
     ){
         UserDto userDto = authService.createUserCredentials(registerUser);
-        return "User " + userDto.getId() + " created successfully.";
+
+        AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
+        Cookie cookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
+        response.addCookie(cookie);
+        AuthenticateUserResponse userResponse = AuthenticateUserResponse.builder()
+                .accessToken(accessTokenResponse.getAccessToken())
+                .username(userDto.getUsername())
+                .email(userDto.getEmail())
+                .id(userDto.getId())
+                .picture(userDto.getPicture())
+                .build();
+
+
+        return ResponseEntity.ok().body(userResponse);
     }
 
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<AccessTokenResponse> login(
+    public ResponseEntity<AuthenticateUserResponse> login(
             @RequestBody AuthenticateUser authenticateUser,
             @CookieValue(name = "rt_session_id", required = false) Cookie refreshTokenCookieRequest,
             HttpServletRequest request,
@@ -62,7 +76,15 @@ public class AuthController {
 
         response.addCookie(refreshTokenCookie);
 
-        return ResponseEntity.ok().body(accessToken);
+        AuthenticateUserResponse userResponse = AuthenticateUserResponse.builder()
+                .username(userDto.getUsername())
+                .id(userDto.getId())
+                .email(userDto.getEmail())
+                .picture(userDto.getPicture())
+                .accessToken(accessToken.getAccessToken())
+                .build();
+
+        return ResponseEntity.ok().body(userResponse);
 
     }
 

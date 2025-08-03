@@ -1,5 +1,6 @@
 package com.grongo.cloud_storage_app.services.auth.impl;
 
+import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,17 +45,20 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public UserDto authenticateUserCredentials(AuthenticateUser authenticateUser){
-        Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    authenticateUser.getEmail(),
-                    authenticateUser.getPassword()
-                )
-        );
+        try{
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            authenticateUser.getEmail(),
+                            authenticateUser.getPassword()
+                    )
+            );
+            User user = ((CustomUserDetails) auth.getPrincipal()).getUser();
 
-        User user = ((CustomUserDetails) auth.getPrincipal()).getUser();
-
-        log.info("User {} authenticated.", user.getId());
-        return modelMapper.map(user, UserDto.class);
+            log.info("User {} authenticated.", user.getId());
+            return modelMapper.map(user, UserDto.class);
+        }catch (BadCredentialsException e){
+            throw new com.grongo.cloud_storage_app.exceptions.auth.BadCredentialsException("Bad credentials provided");
+        }
     }
 
     public Cookie logoutUser(Cookie refreshCookie){
