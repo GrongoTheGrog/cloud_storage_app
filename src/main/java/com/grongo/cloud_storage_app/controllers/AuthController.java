@@ -3,13 +3,13 @@ package com.grongo.cloud_storage_app.controllers;
 
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
+import com.grongo.cloud_storage_app.models.resetCode.CheckResetCodeRequest;
+import com.grongo.cloud_storage_app.models.resetCode.PostResetCodeDto;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
-import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
-import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUserResponse;
-import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
-import com.grongo.cloud_storage_app.models.user.dto.UserDto;
+import com.grongo.cloud_storage_app.models.user.dto.*;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
 import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
+import com.grongo.cloud_storage_app.services.resetCode.ResetCodeService;
 import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
@@ -30,7 +30,7 @@ public class AuthController {
     private final AuthServiceImpl authService;
     private final UserServiceImpl userService;
     private final JwtServiceImpl jwtService;
-    private final AuthenticationManager authenticationManager;
+    private final ResetCodeService resetCodeService;
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -124,5 +124,39 @@ public class AuthController {
         response.addCookie(emptyCookie);
 
         return ResponseEntity.ok().body("User logged out successfully.");
+    }
+
+    @PostMapping("/resetCode")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createResetCode(
+            @Validated @RequestBody PostResetCodeDto codeDto
+            ){
+        resetCodeService.createCode(codeDto.getEmail());
+    }
+
+    @PostMapping("/resetCode/check")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void checkResetCode(
+            @Validated @RequestBody CheckResetCodeRequest resetCodeRequest
+            ){
+        resetCodeService.checkCode(resetCodeRequest);
+    }
+
+    @PatchMapping("/resetPassword")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(
+            @Validated @RequestBody ResetPasswordRequest resetPasswordRequest
+            ){
+        authService.resetPassword(resetPasswordRequest);
+    }
+
+    @GetMapping("/refreshToken")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void requestRefreshToken(
+            @RequestParam String code,
+            HttpServletResponse response
+    ){
+        Cookie refreshTokenIdCookie = jwtService.getRefreshTokenFromCode(code);
+        response.addCookie(refreshTokenIdCookie);
     }
 }

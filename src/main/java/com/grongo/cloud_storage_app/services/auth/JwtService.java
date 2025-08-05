@@ -23,4 +23,6 @@ public interface JwtService {
     Optional<String> findRefreshById(String id);
 
     Cookie createEmptyRefreshIdCookie();
+
+    Cookie getRefreshTokenFromCode(String code);
 }

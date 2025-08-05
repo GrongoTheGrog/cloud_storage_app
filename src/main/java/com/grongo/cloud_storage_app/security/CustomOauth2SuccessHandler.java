@@ -2,11 +2,14 @@ package com.grongo.cloud_storage_app.security;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.grongo.cloud_storage_app.models.token.JwtRefresh;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
 import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
+import com.grongo.cloud_storage_app.services.cache.CacheKeys;
+import com.grongo.cloud_storage_app.services.cache.impl.RefreshTokenCodeCache;
 import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -26,6 +29,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
+import java.util.UUID;
 
 //  That custom Oauth2 success handler lies at the end of the oauth login lifecycle.
 //
@@ -36,7 +41,7 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
 
     private final AuthServiceImpl authService;
     private final JwtServiceImpl jwtService;
-    private final ModelMapper modelMapper;
+    private final RefreshTokenCodeCache refreshTokenCodeCache;
     private final UserServiceImpl userService;
 
     @Value("${FRONTEND_REDIRECT_URI}")
@@ -63,9 +68,13 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
         UserDto userDto = userService.findByEmail(email).orElseGet(() -> authService.createUserCredentials(registerUser));
 
         AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), email);
-        Cookie refreshTokenSessionCookie = jwtService.getRefreshTokenCookie(userDto.getId(), email, userDto);
 
-        response.addCookie(refreshTokenSessionCookie);
+        String refreshTokenId = jwtService.createRefreshToken(userDto.getId(), email, userDto);
+
+        //  A random short-lived code is generated so the user can retrieve
+        //  with a request the actual refreshTokenId
+        String randomCode = UUID.randomUUID().toString();
+        refreshTokenCodeCache.setKey(CacheKeys.refreshTokenKey(randomCode), refreshTokenId, Duration.ofSeconds(60));
 
         response.setStatus(301);
         String redirectUrl = UriComponentsBuilder
@@ -75,6 +84,7 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
                 .queryParam("access_token", accessTokenResponse.getAccessToken())
                 .queryParam("email", userDto.getEmail())
                 .queryParam("picture", userDto.getPicture())
+                .queryParam("code", randomCode)
                 .build()
                 .toUriString();
         response.setHeader("Location", redirectUrl);

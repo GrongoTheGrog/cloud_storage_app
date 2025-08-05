@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.services.auth.impl;
 
 
+import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.InvalidTokenException;
 import com.grongo.cloud_storage_app.models.token.JwtRefresh;
 import com.grongo.cloud_storage_app.models.user.User;
@@ -8,6 +9,8 @@ import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.repositories.RefreshRepository;
 import com.grongo.cloud_storage_app.services.auth.JwtService;
+import com.grongo.cloud_storage_app.services.cache.CacheKeys;
+import com.grongo.cloud_storage_app.services.cache.impl.RefreshTokenCodeCache;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -23,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
-@Transactional(rollbackFor = Exception.class)
 public class JwtServiceImpl implements JwtService {
 
     @Value("${JWT_SECRET}")
@@ -40,6 +42,9 @@ public class JwtServiceImpl implements JwtService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private RefreshTokenCodeCache refreshTokenCodeCache;
 
     private String createJwt(Long userId, String userEmail, int expiration){
         Map<String, Object> claims = new HashMap<>();
@@ -92,13 +97,7 @@ public class JwtServiceImpl implements JwtService {
     //CREATE REFRESH TOKEN AND COOKIE
     public Cookie getRefreshTokenCookie(Long userId, String userEmail, UserDto userDto){
         String id = createRefreshToken(userId, userEmail, userDto);
-        Cookie tokenCookie = new Cookie("rt_session_id", id);
-        tokenCookie.setHttpOnly(true);
-        tokenCookie.setMaxAge(refreshTokenExpiration);
-        tokenCookie.setAttribute("SameSite", "Lax");
-        tokenCookie.setSecure(false);
-
-        return tokenCookie;
+        return createRefreshCookie(id);
     }
 
 
@@ -115,16 +114,29 @@ public class JwtServiceImpl implements JwtService {
 
     //CREATE EMPTY COOKIE FOR REFRESH TOKEN ID
     public Cookie createEmptyRefreshIdCookie(){
-        Cookie emptyCookie = new Cookie("rt_session_id", "");
-        emptyCookie.setHttpOnly(true);
-        emptyCookie.setMaxAge(refreshTokenExpiration);
-        emptyCookie.setSecure(false);
+        return createRefreshCookie("");
+    }
 
-        return emptyCookie;
+    @Override
+    public Cookie getRefreshTokenFromCode(String code) {
+        String tokenId = refreshTokenCodeCache.getKey(CacheKeys.refreshTokenKey(code));
+        if (tokenId == null) throw new AccessDeniedException("Invalid code.");
+
+        return createRefreshCookie(tokenId);
     }
 
     //TRANSFORM STRING TO KEY
     public SecretKey getKey(){
         return Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8));
+    }
+
+    //CREATE COOKIE
+    Cookie createRefreshCookie(String uuid){
+        Cookie tokenCookie = new Cookie("rt_session_id", uuid);
+        tokenCookie.setHttpOnly(true);
+        tokenCookie.setMaxAge(refreshTokenExpiration);
+        tokenCookie.setAttribute("SameSite", "Lax");
+        tokenCookie.setSecure(false);
+        return tokenCookie;
     }
 }
