@@ -43,13 +43,13 @@ public class JwtFilterCheck extends OncePerRequestFilter {
             String bearerHeader = request.getHeader("Authorization");
 
             if (bearerHeader == null){
-                throw new MissingTokenException("Missing Authorization header.");
+                throw new MissingTokenException();
             }
 
             List<String> bearerToken = Arrays.stream(bearerHeader.split(" ")).toList();
 
             if (!bearerToken.getFirst().equals("Bearer")){
-                throw  new MissingTokenException("Authorization header is not a Bearer token.");
+                throw  new MissingTokenException();
             }
 
             String accessToken = bearerToken.get(1);
@@ -71,7 +71,7 @@ public class JwtFilterCheck extends OncePerRequestFilter {
     }
 
     private void writeErrorResponse(int status, String message, String details, HttpServletResponse response) throws IOException {
-        ExceptionResponse exceptionResponse = new ExceptionResponse(status, message, details);
+        ExceptionResponse exceptionResponse = new ExceptionResponse(status, message, details, true);
         ObjectMapper objectMapper = new ObjectMapper();
 
         response.setStatus(status);

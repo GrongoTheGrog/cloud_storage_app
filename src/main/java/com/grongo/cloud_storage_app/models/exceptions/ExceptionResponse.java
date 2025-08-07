@@ -15,7 +15,8 @@ public class ExceptionResponse {
     public ExceptionResponse(
             int status,
             String error,
-            String message
+            String message,
+            boolean isRefreshNeeded
     ){
         this.message = message;
         this.status = status;
@@ -27,5 +28,6 @@ public class ExceptionResponse {
     String error;
     String message;
     String timestamp;
+    boolean isRefreshNeeded;
 
 }

@@ -100,7 +100,7 @@ public class AuthController {
 
         Long userId = ((Integer) claims.get("id")).longValue();
 
-        UserDto userDto = userService.findUserById(userId).orElseThrow(() -> new TokenException("User not found with given refresh token.", HttpStatus.UNAUTHORIZED));
+        UserDto userDto = userService.findUserById(userId).orElseThrow(() -> new TokenException("User not found with given refresh token.", HttpStatus.UNAUTHORIZED, false));
 
         AccessTokenResponse accessToken = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
 

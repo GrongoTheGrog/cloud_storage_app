@@ -33,7 +33,8 @@ public class ErrorHandler {
         ExceptionResponse exceptionResponse = new ExceptionResponse(
                 e.getStatus().value(),
                 e.getStatus().name(),
-                e.getMessage()
+                e.getMessage(),
+                e.isRefreshNeeded()
         );
 
         return ResponseEntity

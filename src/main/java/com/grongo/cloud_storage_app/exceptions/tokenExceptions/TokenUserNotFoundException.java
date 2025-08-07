@@ -4,6 +4,6 @@ import org.springframework.http.HttpStatus;
 
 public class TokenUserNotFoundException extends TokenException {
     public TokenUserNotFoundException(String message, HttpStatus status) {
-        super(message, HttpStatus.NOT_FOUND);
+        super(message, HttpStatus.NOT_FOUND, true);
     }
 }
