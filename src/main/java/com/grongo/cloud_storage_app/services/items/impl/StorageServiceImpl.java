@@ -1,22 +1,18 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.exceptions.HttpException;
 import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ConflictStorageException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.StorageException;
-import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
-import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.models.items.dto.ItemVisibilityUpdateRequest;
 import com.grongo.cloud_storage_app.models.items.dto.QueryItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
-import com.grongo.cloud_storage_app.models.tag.Tag;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.*;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
@@ -26,9 +22,7 @@ import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

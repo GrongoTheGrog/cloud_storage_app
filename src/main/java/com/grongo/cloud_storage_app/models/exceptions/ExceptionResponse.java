@@ -8,8 +8,8 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 public class ExceptionResponse {
 
     public ExceptionResponse(
@@ -20,8 +20,9 @@ public class ExceptionResponse {
     ){
         this.message = message;
         this.status = status;
-        this.timestamp = new Date().toString();
+        timestamp = new Date().toString();
         this.error = error;
+        this.isRefreshNeeded = isRefreshNeeded;
     }
 
     int status;

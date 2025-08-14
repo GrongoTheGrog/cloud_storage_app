@@ -9,8 +9,10 @@ import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import java.util.Optional;
 import static com.grongo.cloud_storage_app.TestUtils.getFolder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -40,16 +43,14 @@ public class FolderIT {
 
     @Autowired
     MockMvc mockMvc;
-
     @Autowired
     UserRepository userRepository;
-
     @Autowired
     StorageService storageService;
-
     @Autowired
-    JwtService jwtService;
-
+    JwtAccessService jwtAccessService;
+    @Autowired
+    JwtRefreshService jwtRefreshService;
     @Autowired
     FolderRepository folderRepository;
 
@@ -75,7 +76,7 @@ public class FolderIT {
         userRepository.save(user);
         currentAuthenticatedUser = user;
 
-        accessToken = jwtService.createAccessToken(user.getId(), "test").getAccessToken();
+        accessToken = jwtAccessService.create(user.getId(), user.getEmail());
     }
 
 
@@ -86,6 +87,7 @@ public class FolderIT {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/folders")
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(folderRequestJson)
         ).andExpect(status().isCreated());
@@ -110,6 +112,7 @@ public class FolderIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + folder1.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moveItemRequestJson)
         ).andExpect(status().isNoContent());
@@ -135,6 +138,7 @@ public class FolderIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + folder2.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moveItemRequestJson)
         ).andExpect(status().isNoContent());
@@ -161,6 +165,7 @@ public class FolderIT {
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + folder.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(moveItemRequestJson)
         ).andExpect(status().isConflict());
 
@@ -178,6 +183,7 @@ public class FolderIT {
         folderRepository.save(folder);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + folder.getId())
+                .with(csrf())
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isOk());
     }
@@ -197,6 +203,7 @@ public class FolderIT {
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/visibility/" + rootFolder.getId())
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(objectMapper.writeValueAsString(request))
         ).andExpect(status().isNoContent());
 

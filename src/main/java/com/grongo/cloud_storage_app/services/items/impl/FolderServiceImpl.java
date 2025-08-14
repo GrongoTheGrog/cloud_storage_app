@@ -5,12 +5,10 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundE
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.Item;
-import com.grongo.cloud_storage_app.models.items.dto.FileDto;
-import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
-import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
-import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
+import com.grongo.cloud_storage_app.models.items.dto.*;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
+import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
@@ -23,9 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Service
@@ -36,6 +33,7 @@ public class FolderServiceImpl implements FolderService {
     private final ModelMapper modelMapper;
     private final StorageService storageService;
     private final AuthService authService;
+    private final ItemRepository itemRepository;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -80,13 +78,45 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     @Transactional(readOnly = true)
-    public FolderDto findFolderById(Long id) {
-        Folder folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder of id " + id));
+    public FolderNestedDto findFolderById(Long id) {
         User user = authService.getCurrentAuthenticatedUser();
+
+        Folder folder;
+        if (id == null){
+            List<Item> items = itemRepository.findAllRootItems(user.getId());
+            folder = Folder.builder()
+                    .storedFiles(items)
+                    .owner(user)
+                    .path("/")
+                    .name("Root")
+                    .build();
+
+            long size = 0;
+            for (Item item : items){
+                size += item.getSize();
+            }
+
+            folder.setSize(size);
+
+        }else{
+            folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder"));
+        }
 
         storageService.checkItemPermission(folder, user, FilePermission.VIEW);
 
-        return modelMapper.map(folder, FolderDto.class);
+        //force lazy loading
+        folder.getStoredFiles().size();
+
+        List<ItemDto> storedItems = folder.getStoredFiles()
+                .stream()
+                .map(item -> modelMapper.map(item, ItemDto.class))
+                .toList();
+
+        folder.setStoredFiles(List.of());
+
+        FolderNestedDto folderNestedDto = modelMapper.map(folder, FolderNestedDto.class);
+        folderNestedDto.setStoredFiles(storedItems);
+        return folderNestedDto;
     }
 
 

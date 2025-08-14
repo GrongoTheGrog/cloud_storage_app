@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.integrationTests;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.grongo.cloud_storage_app.models.token.JwtRefresh;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
@@ -9,7 +10,8 @@ import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.repositories.RefreshRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +42,10 @@ public class AuthenticationIT {
     private AuthService authService;
 
     @Autowired
-    private JwtService jwtService;
+    private JwtAccessService jwtAccessService;
+
+    @Autowired
+    private JwtRefreshService jwtRefreshService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -56,7 +61,7 @@ public class AuthenticationIT {
                 .post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestUserJson)
-        ).andExpect(status().isCreated());
+        ).andExpect(status().isOk());
 
         Optional<User> user = userRepository.findById(1L);
         assertThat(user).isPresent();
@@ -85,15 +90,15 @@ public class AuthenticationIT {
         RegisterUser registerUser = getRequestUser();
 
         UserDto userDto = authService.createUserCredentials(registerUser);
-        Cookie refreshTokenCookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
+        String refreshTokenId = jwtRefreshService.persistToDbAndReturnId(userDto);
+        Cookie refreshTokenCookie = jwtRefreshService.cookie(refreshTokenId);
 
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/auth/refresh")
                 .cookie(refreshTokenCookie)
         )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.expiresAt").exists());
+                .andExpect(jsonPath("$.accessToken").exists());
     }
 
     @Test
@@ -101,14 +106,15 @@ public class AuthenticationIT {
         RegisterUser registerUser = getRequestUser();
 
         UserDto userDto = authService.createUserCredentials(registerUser);
-        Cookie refreshTokenCookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
+        String refreshToken = jwtRefreshService.create(userDto.getId(), userDto.getEmail());
+        Cookie refreshTokenCookie = jwtRefreshService.cookie(refreshToken);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/auth/logout")
                 .cookie(refreshTokenCookie)
         ).andExpect(cookie().value("rt_session_id", ""));
 
         String tokenId = refreshTokenCookie.getValue();
-        Optional<String> jwtRefresh = jwtService.findRefreshById(tokenId);
+        Optional<JwtRefresh> jwtRefresh = jwtRefreshService.findById(tokenId);
         assertThat(jwtRefresh).isEmpty();
     }
 
@@ -125,11 +131,11 @@ public class AuthenticationIT {
         RegisterUser registerUser = getRequestUser();
         UserDto userDto = authService.createUserCredentials(registerUser);
 
-        AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
+        String accessToken = jwtAccessService.create(userDto.getId(), userDto.getEmail());
 
         mockMvc.perform(MockMvcRequestBuilders
                 .get("/api/ping")
-                .header("Authorization", "Bearer " + accessTokenResponse.getAccessToken())
+                .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isOk());
     }
 }

@@ -3,13 +3,13 @@ package com.grongo.cloud_storage_app.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.token.JwtRefresh;
-import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.RegisterUser;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
-import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
 import com.grongo.cloud_storage_app.services.cache.CacheKeys;
 import com.grongo.cloud_storage_app.services.cache.impl.RefreshTokenCodeCache;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -40,7 +40,8 @@ import java.util.UUID;
 public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final AuthServiceImpl authService;
-    private final JwtServiceImpl jwtService;
+    private final JwtAccessService jwtAccessService;
+    private final JwtRefreshService jwtRefreshService;
     private final RefreshTokenCodeCache refreshTokenCodeCache;
     private final UserServiceImpl userService;
 
@@ -67,9 +68,11 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
 
         UserDto userDto = userService.findByEmail(email).orElseGet(() -> authService.createUserCredentials(registerUser));
 
-        AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), email);
+        String refreshTokenId = jwtRefreshService.persistToDbAndReturnId(userDto);
+        Cookie refreshTokenCookie = jwtRefreshService.cookie(refreshTokenId);
+        response.addCookie(refreshTokenCookie);
 
-        String refreshTokenId = jwtService.createRefreshToken(userDto.getId(), email, userDto);
+        String accessToken = jwtAccessService.create(userDto.getId(), userDto.getEmail());
 
         //  A random short-lived code is generated so the user can retrieve
         //  with a request the actual refreshTokenId
@@ -81,10 +84,10 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
                 .fromUri(URI.create(frontendRedirectString))
                 .queryParam("username", username)
                 .queryParam("id", userDto.getId().toString())
-                .queryParam("access_token", accessTokenResponse.getAccessToken())
                 .queryParam("email", userDto.getEmail())
                 .queryParam("picture", userDto.getPicture())
                 .queryParam("code", randomCode)
+                .queryParam("accessToken", accessToken)
                 .build()
                 .toUriString();
         response.setHeader("Location", redirectUrl);

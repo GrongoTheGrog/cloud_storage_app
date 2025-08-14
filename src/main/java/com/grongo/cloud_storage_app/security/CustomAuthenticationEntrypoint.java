@@ -23,7 +23,7 @@ public class CustomAuthenticationEntrypoint implements AuthenticationEntryPoint 
                 401,
                 "Bad credentials",
                 authException.toString(),
-                false
+                true
         ));
 
         response.setStatus(401);

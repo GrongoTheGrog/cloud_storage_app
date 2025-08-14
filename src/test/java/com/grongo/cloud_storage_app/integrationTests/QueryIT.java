@@ -12,8 +12,9 @@ import com.grongo.cloud_storage_app.models.tag.Tag;
 import com.grongo.cloud_storage_app.models.tag.TagJoin;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.*;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
@@ -52,7 +54,9 @@ public class QueryIT {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private JwtService jwtService;
+    private JwtRefreshService jwtRefreshService;
+    @Autowired
+    private JwtAccessService jwtAccessService;
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
@@ -95,11 +99,10 @@ public class QueryIT {
 
         userRepository.save(currentAuthenticatedUser);
 
-        accessToken = jwtService.createAccessToken(
+        accessToken = jwtAccessService.create(
                 currentAuthenticatedUser.getId(),
                 currentAuthenticatedUser.getEmail()
-                )
-                .getAccessToken();
+                );
     }
 
     private final TypeReference<List<ItemDto>> typeRef = new TypeReference<List<ItemDto>>() {};
@@ -111,6 +114,7 @@ public class QueryIT {
     private List<ItemDto> fetchQuery(String query) throws Exception {
         String baseUrl = "/api/items/query";
         MvcResult mvcRequest =  mockMvc.perform(MockMvcRequestBuilders.get(baseUrl + query)
+                        .with(csrf())
                         .header("Authorization", "Bearer " + accessToken)
                 )
                 .andExpect(status().isOk())

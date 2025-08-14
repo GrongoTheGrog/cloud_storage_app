@@ -12,7 +12,8 @@ import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.util.List;
 
 import static com.grongo.cloud_storage_app.TestUtils.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -40,7 +42,9 @@ public class SharedItemsIT {
     UserRepository userRepository;
 
     @Autowired
-    JwtService jwtService;
+    private JwtRefreshService jwtRefreshService;
+    @Autowired
+    private JwtAccessService jwtAccessService;
 
     @Autowired
     MockMvc mockMvc;
@@ -72,8 +76,8 @@ public class SharedItemsIT {
         userRepository.save(currentAuthenticatedUser);
         userRepository.save(sharingUser);
 
-        accessToken = jwtService.createAccessToken(currentAuthenticatedUser.getId(), currentAuthenticatedUser.getEmail()).getAccessToken();
-        sharingUserAccessToken = jwtService.createAccessToken(sharingUser.getId(), sharingUser.getEmail()).getAccessToken();
+        accessToken = jwtAccessService.create(currentAuthenticatedUser.getId(), currentAuthenticatedUser.getEmail());
+        sharingUserAccessToken = jwtAccessService.create(sharingUser.getId(), sharingUser.getEmail());
     }
 
     @Test
@@ -97,6 +101,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sharedItems")
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(sharedItemRequestJson)
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());
@@ -131,6 +136,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sharedItems")
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(sharedItemRequestJson)
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());
@@ -152,7 +158,8 @@ public class SharedItemsIT {
         sharedItemRepository.save(sharedItem);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + folder.getId())
-                        .header("Authorization", "Bearer " + sharingUserAccessToken)
+                .with(csrf())
+                .header("Authorization", "Bearer " + sharingUserAccessToken)
         ).andExpect(status().isOk());
 
     }
@@ -171,6 +178,7 @@ public class SharedItemsIT {
         sharedItemRepository.save(sharedItem);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + nestedFolder.getId())
+                .with(csrf())
                 .header("Authorization", "Bearer " + sharingUserAccessToken)
         ).andExpect(status().isOk());
     }
@@ -188,6 +196,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders
                 .patch("/api/items/move/" + sharedFolder.getId())
+                .with(csrf())
                 .header("Authorization", "Bearer " + sharingUserAccessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(moveItemRequest))
@@ -216,6 +225,7 @@ public class SharedItemsIT {
         mockMvc.perform(MockMvcRequestBuilders.put("/api/sharedItems/" + sharedItem.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(sharedItemRequest))
+                .with(csrf())
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());
 
@@ -238,6 +248,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/sharedItems/" + sharedItem.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
         ).andExpect(status().isNoContent());
 
         List<SharedItem> sharedItemList = sharedItemRepository.findAll();

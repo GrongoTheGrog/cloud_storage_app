@@ -14,6 +14,8 @@ import com.grongo.cloud_storage_app.security.CustomUserDetails;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.CacheKeys;
 import com.grongo.cloud_storage_app.services.cache.impl.ResetCodeMemoryCache;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -32,7 +34,8 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService {
     private final ModelMapper modelMapper;
     private final UserRepository userRepository;
-    private final JwtServiceImpl jwtService;
+    private final JwtAccessService jwtAccessService;
+    private final JwtRefreshService jwtRefreshService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final ResetCodeMemoryCache resetCodeMemoryCache;
@@ -68,11 +71,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public Cookie logoutUser(Cookie refreshCookie){
-        jwtService.deleteRefreshToken(refreshCookie);
+        jwtRefreshService.deleteRefreshToken(refreshCookie.getValue());
 
         log.info("User logged out");
 
-        return jwtService.createEmptyRefreshIdCookie();
+        return jwtRefreshService.emptyCookie();
     }
 
     @Override

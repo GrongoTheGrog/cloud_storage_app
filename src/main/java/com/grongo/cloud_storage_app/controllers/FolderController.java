@@ -5,6 +5,7 @@ import com.grongo.cloud_storage_app.exceptions.HttpException;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
+import com.grongo.cloud_storage_app.models.items.dto.FolderNestedDto;
 import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
 import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
 import com.grongo.cloud_storage_app.services.items.FolderService;
@@ -37,10 +38,15 @@ public class FolderController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public FolderDto handleFindFolderById(
-            @PathVariable Long id
+    public FolderNestedDto handleFindFolderById(
+            @PathVariable String id
     ){
-        return folderService.findFolderById(id);
+        try{
+            Long folderId = id.equals("root") ? null : Long.parseLong(id);
+            return folderService.findFolderById(folderId);
+        }catch (NumberFormatException e){
+            throw new HttpException("Enter either root or an id as the path variable.", HttpStatus.BAD_REQUEST);
+        }
     }
 
     @GetMapping("/open/{id}")

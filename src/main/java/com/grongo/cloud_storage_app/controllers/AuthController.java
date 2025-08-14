@@ -1,16 +1,16 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
-import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.TokenNotFoundException;
 import com.grongo.cloud_storage_app.models.resetCode.CheckResetCodeRequest;
 import com.grongo.cloud_storage_app.models.resetCode.PostResetCodeDto;
+import com.grongo.cloud_storage_app.models.token.JwtRefresh;
 import com.grongo.cloud_storage_app.models.token.dto.AccessTokenResponse;
 import com.grongo.cloud_storage_app.models.user.dto.*;
 import com.grongo.cloud_storage_app.services.auth.impl.AuthServiceImpl;
-import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.resetCode.ResetCodeService;
-import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,9 +28,9 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthServiceImpl authService;
-    private final UserServiceImpl userService;
-    private final JwtServiceImpl jwtService;
     private final ResetCodeService resetCodeService;
+    private final JwtAccessService jwtAccessService;
+    private final JwtRefreshService jwtRefreshService;
 
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,14 +40,17 @@ public class AuthController {
     ){
         UserDto userDto = authService.createUserCredentials(registerUser);
 
-        AccessTokenResponse accessTokenResponse = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
-        Cookie cookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
-        response.addCookie(cookie);
+        String accessToken = jwtAccessService.create(userDto.getId(), userDto.getEmail());
+
+        String tokenId = jwtRefreshService.persistToDbAndReturnId(userDto);
+        Cookie refreshTokenCookie = jwtRefreshService.cookie(tokenId);
+        response.addCookie(refreshTokenCookie);
+
         AuthenticateUserResponse userResponse = AuthenticateUserResponse.builder()
-                .accessToken(accessTokenResponse.getAccessToken())
                 .username(userDto.getUsername())
                 .email(userDto.getEmail())
                 .id(userDto.getId())
+                .accessToken(accessToken)
                 .picture(userDto.getPicture())
                 .build();
 
@@ -60,52 +63,43 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<AuthenticateUserResponse> login(
             @RequestBody AuthenticateUser authenticateUser,
-            @CookieValue(name = "rt_session_id", required = false) Cookie refreshTokenCookieRequest,
             HttpServletRequest request,
             HttpServletResponse response
             ){
         UserDto userDto = authService.authenticateUserCredentials(authenticateUser);
 
-        if (refreshTokenCookieRequest != null){
-            jwtService.deleteRefreshToken(refreshTokenCookieRequest);
-        }
+        String accessToken = jwtAccessService.create(userDto.getId(), userDto.getEmail());
 
-
-        AccessTokenResponse accessToken = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
-        Cookie refreshTokenCookie = jwtService.getRefreshTokenCookie(userDto.getId(), userDto.getEmail(), userDto);
-
+        String tokenId = jwtRefreshService.persistToDbAndReturnId(userDto);
+        Cookie refreshTokenCookie = jwtRefreshService.cookie(tokenId);
         response.addCookie(refreshTokenCookie);
 
-        AuthenticateUserResponse userResponse = AuthenticateUserResponse.builder()
+        AuthenticateUserResponse authenticateUserResponse = AuthenticateUserResponse.builder()
                 .username(userDto.getUsername())
                 .id(userDto.getId())
                 .email(userDto.getEmail())
                 .picture(userDto.getPicture())
-                .accessToken(accessToken.getAccessToken())
+                .accessToken(accessToken)
                 .build();
 
-        return ResponseEntity.ok().body(userResponse);
-
+        return ResponseEntity.ok(authenticateUserResponse);
     }
 
 
     @GetMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<AccessTokenResponse> refresh(
-            HttpServletResponse response,
+    public AccessTokenResponse refresh(
             @CookieValue(name = "rt_session_id", required = true) Cookie refreshTokenCookieRequest
     ){
-        String refreshToken = jwtService.findRefreshById(refreshTokenCookieRequest.getValue()).orElseThrow(() -> new TokenNotFoundException("Token not found."));
-        Claims claims = jwtService.verifyToken(refreshToken);
+        JwtRefresh refreshToken = jwtRefreshService
+                .findById(refreshTokenCookieRequest.getValue())
+                .orElseThrow(() -> new TokenNotFoundException("Token not found."));
 
-        Long userId = ((Integer) claims.get("id")).longValue();
+        Claims claims = jwtRefreshService.verify(refreshToken.getToken());
 
-        UserDto userDto = userService.findUserById(userId).orElseThrow(() -> new TokenException("User not found with given refresh token.", HttpStatus.UNAUTHORIZED, false));
-
-        AccessTokenResponse accessToken = jwtService.createAccessToken(userDto.getId(), userDto.getEmail());
-
-        return ResponseEntity.ok().body(accessToken);
-
+        Number id = (Number) claims.get("id");
+        String accessToken = jwtAccessService.create(id.longValue(), (String) claims.get("email"));
+        return jwtAccessService.formatResponse(accessToken);
     }
 
 
@@ -120,7 +114,7 @@ public class AuthController {
             return ResponseEntity.ok().body("User is already logged out.");
         }
 
-        Cookie emptyCookie = authService.logoutUser(refreshCookie);
+        Cookie emptyCookie = jwtRefreshService.emptyCookie();
         response.addCookie(emptyCookie);
 
         return ResponseEntity.ok().body("User logged out successfully.");
@@ -156,7 +150,14 @@ public class AuthController {
             @RequestParam String code,
             HttpServletResponse response
     ){
-        Cookie refreshTokenIdCookie = jwtService.getRefreshTokenFromCode(code);
-        response.addCookie(refreshTokenIdCookie);
+        String refreshTokenId = jwtRefreshService.getIdFromCode(code);
+        Cookie refreshTokenCookie = jwtRefreshService.cookie(refreshTokenId);
+        response.addCookie(refreshTokenCookie);
+    }
+
+    @GetMapping("/getCsrfToken")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<CsrfToken> getCsrfToken(CsrfToken csrfToken){
+        return ResponseEntity.ok(csrfToken);
     }
 }
