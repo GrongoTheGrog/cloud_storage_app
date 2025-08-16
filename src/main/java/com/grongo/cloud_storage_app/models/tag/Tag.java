@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.models.tag;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class Tag {
     @JoinColumn(name = "user_id")
     private User user;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "tag")
+    @JsonIgnore
     private Set<TagJoin> tagJoins = new HashSet<>();
 
 }

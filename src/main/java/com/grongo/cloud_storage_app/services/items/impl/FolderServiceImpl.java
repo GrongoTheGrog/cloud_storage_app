@@ -14,6 +14,7 @@ import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
@@ -104,12 +106,15 @@ public class FolderServiceImpl implements FolderService {
 
         storageService.checkItemPermission(folder, user, FilePermission.VIEW);
 
-        //force lazy loading
-        folder.getStoredFiles().size();
-
         List<ItemDto> storedItems = folder.getStoredFiles()
                 .stream()
-                .map(item -> modelMapper.map(item, ItemDto.class))
+                .map(item -> {
+                    if (item instanceof File){
+                        return modelMapper.map(item, FileDto.class);
+                    }else{
+                        return modelMapper.map(item, FolderDto.class);
+                    }
+                })
                 .toList();
 
         folder.setStoredFiles(List.of());
@@ -144,12 +149,12 @@ public class FolderServiceImpl implements FolderService {
 
 
     @Override
-    public void deleteFolder(Long folderId) {
-        Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + folderId));
+    public void deleteFolder(Folder folder) {
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
 
         storageService.checkItemPermission(folder, authenticatedUser, FilePermission.DELETE);
 
+        log.info("Deleting folder of id {}.", folder.getId());
         storageService.updateSize(folder.getFolder(), -folder.getSize());
         folderRepository.delete(folder);
     }

@@ -7,9 +7,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface FileService {
 
-    void createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic);
+    FileDto createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic);
     String getSignedUrl(Long fileId);
-    void deleteFile(Long fileId);
     void deleteFile(File file);
     void updateFile(UploadFileForm uploadFileForm, Long id);
 }

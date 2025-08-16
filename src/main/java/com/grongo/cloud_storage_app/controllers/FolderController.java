@@ -62,11 +62,4 @@ public class FolderController {
         }
     }
 
-    @DeleteMapping("/{folderId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void handleFolderDelete(
-            @PathVariable Long folderId
-    ){
-        folderService.deleteFolder(folderId);
-    }
 }

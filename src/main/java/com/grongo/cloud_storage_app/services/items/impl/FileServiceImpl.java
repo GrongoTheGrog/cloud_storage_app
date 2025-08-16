@@ -18,6 +18,7 @@ import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class FileServiceImpl implements FileService {
 
     @Value("${BUCKET_NAME}")
@@ -62,6 +64,7 @@ public class FileServiceImpl implements FileService {
     private final AuthService authService;
     private final DownloadLinkCache downloadLinkCache;
     private final FileTypeDetector fileTypeDetector;
+    private final ModelMapper modelMapper;
 
     @PostConstruct
     public void bucketCheck(){
@@ -69,7 +72,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic) {
+    public FileDto createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic) {
 
         final Path streamPath = getTempPathFromFile(requestFile);
 
@@ -97,6 +100,7 @@ public class FileServiceImpl implements FileService {
                 .name(fileName)
                 .size(requestFile.getSize())
                 .fileType(fileType)
+                .type("FILE")
                 .isPublic(Boolean.TRUE.equals(isPublic))
                 .build();
 
@@ -107,6 +111,8 @@ public class FileServiceImpl implements FileService {
         storageService.updatePath(file);
 
         uploadFile(streamPath, file);
+
+        return modelMapper.map(file, FileDto.class);
     }
 
 
@@ -144,17 +150,6 @@ public class FileServiceImpl implements FileService {
         return url;
     }
 
-    @Override
-    @Transactional
-    public void deleteFile(Long fileId){
-
-        File file = fileRepository
-                .findById(fileId)
-                .orElseThrow(() -> new FileNotFoundException("Could not find file with id of " + fileId));
-
-        deleteFile(file);
-
-    }
 
     @Override
     @Transactional
@@ -164,6 +159,8 @@ public class FileServiceImpl implements FileService {
         storageService.checkItemPermission(file, user, FilePermission.DELETE);
         storageService.updateSize(file.getFolder(), -file.getSize());
 
+
+        log.info("Deleting file of id {}.", file.getId());
         fileRepository.deleteById(file.getId());
 
         try{

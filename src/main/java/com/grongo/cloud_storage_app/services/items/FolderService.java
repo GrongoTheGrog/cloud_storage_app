@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.services.items;
 
 
+import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
 import com.grongo.cloud_storage_app.models.items.dto.FolderNestedDto;
 import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
@@ -15,6 +16,6 @@ public interface FolderService {
     FolderDto createFolder(FolderRequest folderRequest);
     FolderNestedDto findFolderById(Long id);
     List<ItemDto> openFolder(Long folderId);
-    void deleteFolder(Long folderId);
+    void deleteFolder(Folder folder);
 
 }

@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.models.tag;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.grongo.cloud_storage_app.models.items.Item;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,6 +20,7 @@ public class TagJoin {
     @JoinColumn(name = "item_id")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
+    @JsonIgnore
     private Item item;
     @ManyToOne
     @JoinColumn(name = "tag_id")

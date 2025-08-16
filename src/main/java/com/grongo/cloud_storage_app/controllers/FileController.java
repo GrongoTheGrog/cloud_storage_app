@@ -18,11 +18,11 @@ public class FileController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void handleFileUpload(
+    public FileDto handleFileUpload(
             @ModelAttribute UploadFileForm uploadFileForm
             ){
 
-        fileService.createFile(
+        return fileService.createFile(
                 uploadFileForm.getFile(),
                 uploadFileForm.getFolderId(),
                 uploadFileForm.getFileName(),
@@ -38,13 +38,6 @@ public class FileController {
         return fileService.getSignedUrl(id);
     }
 
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void handleFileDeletion(
-            @PathVariable Long id
-    ){
-        fileService.deleteFile(id);
-    }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

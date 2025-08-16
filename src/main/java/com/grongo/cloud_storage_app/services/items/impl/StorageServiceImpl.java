@@ -320,4 +320,9 @@ public class StorageServiceImpl implements StorageService {
 
         return itemDtoList;
     }
+
+    @Override
+    public void deleteItems(List<Long> ids) {
+
+    }
 }

@@ -3,6 +3,7 @@ package com.grongo.cloud_storage_app.controllers;
 
 import com.grongo.cloud_storage_app.models.items.dto.*;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.ItemService;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class ItemController {
 
     private final StorageService storageService;
     private final TagService tagService;
+    private final ItemService itemService;
 
     @PatchMapping("/move/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -74,5 +76,13 @@ public class ItemController {
             QueryItemDto queryItemDto
             ){
         return storageService.queryFiles(queryItemDto);
+    }
+
+    @DeleteMapping("/{itemId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleItemsDelete(
+            @PathVariable List<Long> itemIds
+    ){
+        itemService.deleteItems(itemIds);
     }
 }
