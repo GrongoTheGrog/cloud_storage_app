@@ -37,7 +37,6 @@ public class JwtFilterCheck extends OncePerRequestFilter {
             FilterChain filterChain
             ) throws ServletException, IOException {
 
-        Cookie[] cookies = request.getCookies();
         try{
 
             String bearerHeader = request.getHeader("Authorization");
@@ -47,6 +46,8 @@ public class JwtFilterCheck extends OncePerRequestFilter {
             }
 
             String accessToken = bearerHeader.substring(7);
+
+            if (accessToken.equals("null")) throw new MissingTokenException();
 
             //VERIFIES THE TOKEN AND THROW IF INVALID
             Claims claims = jwtAccessService.verify(accessToken);

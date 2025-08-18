@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.parameters.P;
 
@@ -35,9 +36,11 @@ public class FileTest {
     private FileRepository fileRepository;
     @Mock
     private FileTypeDetector fileTypeDetector;
+    @Mock
+    private ModelMapper modelMapper;
 
     @InjectMocks
-    private FileServiceImpl fileService; // your service implementation class
+    private FileServiceImpl fileService;
 
     @Test
     public void testIfFileCanBeCreated() {

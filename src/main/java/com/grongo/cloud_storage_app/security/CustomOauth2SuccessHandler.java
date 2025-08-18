@@ -22,9 +22,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
@@ -82,7 +79,7 @@ public class CustomOauth2SuccessHandler implements AuthenticationSuccessHandler 
         response.setStatus(301);
         String redirectUrl = UriComponentsBuilder
                 .fromUri(URI.create(frontendRedirectString))
-                .queryParam("username", username)
+                .queryParam("username", userDto.getUsername())
                 .queryParam("id", userDto.getId().toString())
                 .queryParam("email", userDto.getEmail())
                 .queryParam("picture", userDto.getPicture())
