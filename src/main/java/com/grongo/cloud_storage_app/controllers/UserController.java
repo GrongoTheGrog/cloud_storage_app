@@ -32,4 +32,12 @@ public class UserController {
     ){
         return userService.updateUsername(userId, username);
     }
+
+    @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(
+            @PathVariable Long userId
+    ){
+        userService.deleteUser(userId);
+    }
 }

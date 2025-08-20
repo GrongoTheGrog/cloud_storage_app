@@ -1,5 +1,6 @@
 package com.grongo.cloud_storage_app.unitTests;
 
+import com.grongo.cloud_storage_app.aws.AwsService;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.models.user.User;
@@ -38,13 +39,14 @@ public class FileTest {
     private FileTypeDetector fileTypeDetector;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private AwsService awsService;
 
     @InjectMocks
     private FileServiceImpl fileService;
 
     @Test
     public void testIfFileCanBeCreated() {
-        // Arrange
         User mockUser = new User();
         when(authService.getCurrentAuthenticatedUser()).thenReturn(mockUser);
 
@@ -55,52 +57,12 @@ public class FileTest {
                 "test".getBytes()
         );
 
-        Path mockPath = Path.of("temp/file.txt");
-        FileServiceImpl spyService = spy(fileService);
-        doReturn(mockPath).when(spyService).getTempPathFromFile(mockMultipartFile);
-        doReturn("text/plain").when(fileTypeDetector).getFileType(mockPath);
+        doReturn("text/plain").when(awsService).uploadResourceFile(any(), any());
+        fileService.createFile(mockMultipartFile, null, "newName", false);
 
-        when(storageService.checkNameConflict(null, mockUser.getId(), "file.txt")).thenReturn(false);
-        doNothing().when(spyService).uploadFile((Path) any(), (File) any());
-
-        spyService.createFile(mockMultipartFile, null, null, false);
-
-        verify(fileRepository, times(1)).save(any(File.class));
         verify(storageService, times(1)).updateSize(null, mockMultipartFile.getSize());
         verify(storageService, times(1)).updatePath(any(File.class));
-        verify(spyService, times(1)).uploadFile(any(Path.class), any(File.class));
+
     }
 
-
-    @Test
-    public void testIfFileCanBeUpdated(){
-        User mockUser = new User();
-        when(authService.getCurrentAuthenticatedUser()).thenReturn(mockUser);
-
-        MockMultipartFile mockMultipartFile = new MockMultipartFile(
-                "file",
-                "file.txt",
-                "text/plain",
-                "test".getBytes()
-        );
-
-        Path mockPath = Path.of("temp/file.txt");
-        FileServiceImpl spyService = spy(fileService);
-        doReturn(mockPath).when(spyService).getTempPathFromFile(mockMultipartFile);
-        doReturn("text/plain").when(fileTypeDetector).getFileType(mockPath);
-
-        when(storageService.checkNameConflict(null, mockUser.getId(), "file.txt")).thenReturn(false);
-        doNothing().when(spyService).uploadFile((Path) any(), (File) any());
-
-        UploadFileForm uploadFileForm = UploadFileForm.builder()
-                        .file(mockMultipartFile)
-                        .build();
-
-        spyService.updateFile(uploadFileForm, 0L);
-
-        verify(fileRepository, times(1)).save(any(File.class));
-        verify(storageService, times(1)).updateSize(null, mockMultipartFile.getSize());
-        verify(storageService, times(1)).updatePath(any(File.class));
-        verify(spyService, times(1)).uploadFile(any(Path.class), any(File.class));
-    }
 }

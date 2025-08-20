@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.unitTests;
 
 
+import com.grongo.cloud_storage_app.aws.AwsService;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
 import com.grongo.cloud_storage_app.models.user.User;
@@ -46,6 +47,8 @@ public class FolderTests {
     FileTypeDetector fileTypeDetector;
     @Mock
     ModelMapper modelMapper;
+    @Mock
+    AwsService awsService;
 
     @InjectMocks
     FolderServiceImpl folderService;
@@ -62,17 +65,14 @@ public class FolderTests {
         FileServiceImpl spyService = spy(fileService);
 
         doReturn(user).when(authService).getCurrentAuthenticatedUser();
-        doReturn(Path.of("/path")).when(spyService).getTempPathFromFile(any(MultipartFile.class));
-        doReturn("text/plain").when(fileTypeDetector).getFileType(any(Path.class));
-        doReturn(false).when(storageService).checkNameConflict(any(), any(), any());
-        doReturn(Optional.of(folder)).when(folderRepository).findById(any(Long.class));
+
 
         doAnswer(invocation -> {
             folder.setSize(invocation.getArgument(1, Long.class));
             return null;
         }).when(storageService).updateSize(eq(folder), any(Long.class));
 
-        doNothing().when(spyService).uploadFile(any(Path.class), any(File.class));
+        doNothing().when(fileService).updateFile(any(), any());
 
         MockMultipartFile mockMultipartFile = new MockMultipartFile(
                 "file",

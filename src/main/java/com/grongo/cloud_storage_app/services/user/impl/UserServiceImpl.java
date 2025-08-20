@@ -4,8 +4,11 @@ package com.grongo.cloud_storage_app.services.user.impl;
 import com.grongo.cloud_storage_app.aws.AwsService;
 import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
+import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
+import com.grongo.cloud_storage_app.repositories.FileRepository;
+import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.user.UserService;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -27,6 +31,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final AuthService authService;
     private final AwsService awsService;
+    private final FileRepository fileRepository;
+    private final FolderRepository folderRepository;
 
     @Transactional(readOnly = true)
     public Optional<UserDto> findByEmail(String email){
@@ -72,5 +78,23 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         return modelMapper.map(user, UserDto.class);
+    }
+
+    @Override
+    public void deleteUser(Long userId) {
+        User authenticated = authService.getCurrentAuthenticatedUser();
+        if (!authenticated.getId().equals(userId)){
+            throw new AccessDeniedException("An user can't delete another user.");
+        }
+
+
+        List<File> files = fileRepository.findByUserId(userId);
+        files.forEach(file -> {
+                awsService.deleteResourceFile(file.getId());
+            }
+        );
+
+        awsService.deleteProfilePic(userId);
+        userRepository.delete(authenticated);
     }
 }

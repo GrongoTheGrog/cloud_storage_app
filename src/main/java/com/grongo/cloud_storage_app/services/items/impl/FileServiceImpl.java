@@ -1,5 +1,6 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
+import com.grongo.cloud_storage_app.aws.AwsService;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
@@ -51,11 +52,6 @@ import java.util.Optional;
 @Log4j2
 public class FileServiceImpl implements FileService {
 
-    @Value("${BUCKET_NAME}")
-    private String bucketName;
-
-    private final Duration linkTTL = Duration.ofMinutes(10);
-
     private final S3Client s3Client;
     private final FolderRepository folderRepository;
     private final StorageService storageService;
@@ -65,17 +61,13 @@ public class FileServiceImpl implements FileService {
     private final DownloadLinkCache downloadLinkCache;
     private final FileTypeDetector fileTypeDetector;
     private final ModelMapper modelMapper;
+    private final AwsService awsService;
 
-    @PostConstruct
-    public void bucketCheck(){
-        if (bucketName == null) throw new UndefinedBucketNameException("Undefined S3 bucket name.");
-    }
+    private final Duration duration = Duration.ofMinutes(10);
+
 
     @Override
     public FileDto createFile(MultipartFile requestFile, Long folderId, String requestFileName, Boolean isPublic) {
-
-        final Path streamPath = getTempPathFromFile(requestFile);
-
         User user = authService.getCurrentAuthenticatedUser();
 
         Folder folder = null;
@@ -85,10 +77,7 @@ public class FileServiceImpl implements FileService {
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + folderId));
         }
 
-
         String fileName = requestFileName == null ? requestFile.getOriginalFilename() : requestFileName;
-
-        String fileType = fileTypeDetector.getFileType(streamPath);
 
         if (storageService.checkNameConflict(folderId, user.getId(), fileName)){
             throw new ConflictStorageException("There is already a file named " + fileName + " in the given directory.");
@@ -99,18 +88,16 @@ public class FileServiceImpl implements FileService {
                 .folder(folder)
                 .name(fileName)
                 .size(requestFile.getSize())
-                .fileType(fileType)
                 .type("FILE")
                 .isPublic(Boolean.TRUE.equals(isPublic))
                 .build();
 
+        String fileType = awsService.uploadResourceFile(file, requestFile);
+
+        file.setFileType(fileType);
+
         storageService.updateSize(folder, file.getSize());
-
-        fileRepository.save(file);
-
         storageService.updatePath(file);
-
-        uploadFile(streamPath, file);
 
         return modelMapper.map(file, FileDto.class);
     }
@@ -130,23 +117,12 @@ public class FileServiceImpl implements FileService {
 
         String cachedLink = downloadLinkCache.getKey(fileId.toString());
         if (cachedLink != null) {
-            downloadLinkCache.refreshKey(CacheKeys.fileLinkKey(fileId), linkTTL);
+            downloadLinkCache.refreshKey(CacheKeys.fileLinkKey(fileId), duration);
             return cachedLink;
         }
 
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileId.toString())
-                .build();
-
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(linkTTL)
-                .getObjectRequest(getObjectRequest)
-                .build();
-
-        PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(presignRequest);
-        String url = presignedGetObjectRequest.url().toExternalForm();
-        downloadLinkCache.setKey(CacheKeys.fileLinkKey(fileId), url, linkTTL);
+        String url = awsService.getStorageFileLink(fileId);
+        downloadLinkCache.setKey(CacheKeys.fileLinkKey(fileId), url, duration);
         return url;
     }
 
@@ -159,19 +135,10 @@ public class FileServiceImpl implements FileService {
         storageService.checkItemPermission(file, user, FilePermission.DELETE);
         storageService.updateSize(file.getFolder(), -file.getSize());
 
-
         log.info("Deleting file of id {}.", file.getId());
         fileRepository.deleteById(file.getId());
 
-        try{
-            s3Client.deleteObject(DeleteObjectRequest.builder()
-                    .key(file.getId().toString())
-                    .bucket(bucketName)
-                    .build()
-            );
-        }catch (S3Exception e){
-            throw new AmazonException("Could not delete file on S3 bucket.");
-        }
+        awsService.deleteResourceFile(file.getId());
     }
 
     @Override
@@ -183,15 +150,13 @@ public class FileServiceImpl implements FileService {
             return;
         }
 
-        Path tempPath = getTempPathFromFile(uploadFileForm.getFile());
-
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
         File file = optionalFile.get();
 
         storageService.checkItemPermission(file, authenticatedUser, FilePermission.UPDATE);
 
+        String fileType = awsService.uploadResourceFile(file, uploadFileForm.getFile());
         String name = uploadFileForm.getFileName() != null ? uploadFileForm.getFileName() : file.getName();
-        String fileType = fileTypeDetector.getFileType(tempPath);
         String previousName = file.getName();
         Long previousSize = file.getSize();
 
@@ -199,6 +164,7 @@ public class FileServiceImpl implements FileService {
         file.setFileType(fileType);
         file.setName(name);
         file.setSize(uploadFileForm.getFile().getSize());
+        file.setFileType(fileType);
 
         //only update the path if the file has changed the name
         if (!previousName.equals(file.getName())){
@@ -208,41 +174,5 @@ public class FileServiceImpl implements FileService {
         }
 
         storageService.updateSize(file.getFolder(), file.getSize() - previousSize);
-
-        uploadFile(tempPath, file);
-
-    }
-
-    public void uploadFile(Path tempPath, File file){
-        try{
-            s3Client.putObject(
-                    PutObjectRequest.builder()
-                            .bucket(bucketName)
-                            .key(file.getId().toString())
-                            .contentType(file.getFileType())
-                            .build(),
-                    tempPath
-            );
-
-            Files.deleteIfExists(tempPath);
-
-        } catch (S3Exception e){
-            throw new AmazonException("Failed to upload file to S3 bucket.");
-        } catch (IOException e){
-            throw new StorageException("Failed to create a temp file.", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    public Path getTempPathFromFile(MultipartFile multipartFile){
-        try {
-            Path streamPath = Files.createTempFile("streamfile_", null);
-            streamPath.toFile().deleteOnExit();
-
-            InputStream inputStream = multipartFile.getInputStream();
-            Files.copy(inputStream, streamPath, StandardCopyOption.REPLACE_EXISTING);
-            return streamPath;
-        }catch (IOException e){
-            throw new StorageException("Could not read file stream.", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
     }
 }

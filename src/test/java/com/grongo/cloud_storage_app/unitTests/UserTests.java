@@ -2,8 +2,10 @@ package com.grongo.cloud_storage_app.unitTests;
 
 
 import com.grongo.cloud_storage_app.aws.AwsService;
+import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
+import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
@@ -20,6 +22,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import static org.assertj.core.api.Assertions.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +32,8 @@ public class UserTests {
     AwsService awsService;
     @Spy
     ModelMapper modelMapper;
+    @Mock
+    FileRepository fileRepository;
     @Mock
     UserRepository userRepository;
     @Mock
@@ -45,12 +50,12 @@ public class UserTests {
 
     @BeforeEach
     public void mocking(){
-        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(authService.getCurrentAuthenticatedUser()).thenReturn(user);
     }
 
     @Test
     public void testPicturePosting(){
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(awsService.postProfileImage(any(MultipartFile.class), any(Long.class))).thenReturn("Link");
 
         MultipartFile multipartFile = new MockMultipartFile(
@@ -69,12 +74,30 @@ public class UserTests {
     @Test
     public void testIfRenameLogicIsWorking(){
 
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+
         final String USERNAME = "newUsername";
         UserDto userDto = userService.updateUsername(user.getId(), USERNAME);
 
         assertThat(userDto.getUsername()).isEqualTo(USERNAME);
+    }
 
+    @Test
+    public void testIfDeleteUserLogicIsWorking(){
+        doNothing().when(awsService).deleteProfilePic(any());
+        doNothing().when(awsService).deleteResourceFile(any());
+        doReturn(List.of(
+                File.builder().id(1L).build(),
+                File.builder().id(2L).build())
+        )
+                .when(fileRepository)
+                .findByUserId(user.getId());
 
+        userService.deleteUser(user.getId());
+
+        verify(awsService, times(2)).deleteResourceFile(any());
+        verify(awsService, times(1)).deleteProfilePic(anyLong());
+        verify(fileRepository, times(1)).findByUserId(any());
     }
 
 }

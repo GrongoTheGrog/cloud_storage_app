@@ -7,7 +7,10 @@ import java.util.Optional;
 
 public interface UserService{
     public Optional<UserDto> findByEmail(String email);
+
     public UserDto changeUserPicture(Long userId, MultipartFile picture);
 
     UserDto updateUsername(Long userId, String username);
+
+    void deleteUser(Long userId);
 }
