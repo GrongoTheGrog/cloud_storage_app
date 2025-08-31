@@ -14,7 +14,7 @@ import java.util.List;
 public interface FileRepository extends JpaRepository<File, Long> {
     public List<File> findByName(String name);
 
-    @Query("SELECT * FROM File f WHERE f.user.id = :userId")
+    @Query("SELECT f FROM File f WHERE f.owner.id = :userId")
     public List<File> findByUserId(
             @Param("userId") Long userId
     );

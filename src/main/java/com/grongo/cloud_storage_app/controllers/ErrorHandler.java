@@ -13,6 +13,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.web.csrf.InvalidCsrfTokenException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -73,5 +74,18 @@ public class ErrorHandler {
         errors.put("isFields", "true");
 
         return errors;
+    }
+
+    @ExceptionHandler(InvalidCsrfTokenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ExceptionResponse invalidCsrf(
+            InvalidCsrfTokenException e
+    ){
+        return ExceptionResponse.builder()
+                .status(HttpStatus.FORBIDDEN.value())
+                .error(HttpStatus.FORBIDDEN.name())
+                .isRefreshNeeded(true)
+                .message("Invalid csrf token.")
+                .build();
     }
 }

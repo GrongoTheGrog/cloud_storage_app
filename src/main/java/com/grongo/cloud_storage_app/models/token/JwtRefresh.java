@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.Date;
 
@@ -25,6 +27,7 @@ public class JwtRefresh extends TimeStamps {
     @Column(unique = true)
     String id;
     String token;
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToOne
     User user;
     Date expirationDate;

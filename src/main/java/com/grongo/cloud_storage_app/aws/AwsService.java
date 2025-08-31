@@ -94,6 +94,7 @@ public class AwsService {
                     PutObjectRequest.builder()
                             .bucket(STORAGE_BUCKET_NAME)
                             .key(file.getId().toString())
+                            .contentDisposition("inline")
                             .contentType(file.getFileType())
                             .build(),
                     tempPath
@@ -111,10 +112,12 @@ public class AwsService {
         }
     }
 
-    public String getStorageFileLink(Long fileId){
+    public String getStorageFileLink(File file, LinkTypes type){
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(STORAGE_BUCKET_NAME)
-                .key(fileId.toString())
+                .responseContentDisposition(type.equals(LinkTypes.DOWNLOAD) ? "attachment" : "inline")
+                .responseContentType(file.getFileType())
+                .key(file.getId().toString())
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
@@ -122,11 +125,12 @@ public class AwsService {
                 .getObjectRequest(getObjectRequest)
                 .build();
 
-        log.info("Deleting file {}...", fileId);
+
+        log.info("Generating a presigned url for file {} with duration of {} minutes.", file.getId(), STORAGE_LINK_TTL.toMinutes());
+        log.info("The presigned request is of type {}", type.equals(LinkTypes.DOWNLOAD) ? "attachment" : "inline");
 
         PresignedGetObjectRequest request = s3Presigner.presignGetObject(presignRequest);
 
-        log.info("File {} deleted.", fileId);
         return request.url().toString();
     }
 

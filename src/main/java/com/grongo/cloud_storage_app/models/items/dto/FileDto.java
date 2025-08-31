@@ -12,4 +12,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class FileDto extends ItemDto{
     private String fileType;
+    private String type = "FILE";
 }

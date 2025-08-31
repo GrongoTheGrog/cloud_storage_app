@@ -36,8 +36,6 @@ public class FileTest {
     @Mock
     private FileRepository fileRepository;
     @Mock
-    private FileTypeDetector fileTypeDetector;
-    @Mock
     private ModelMapper modelMapper;
     @Mock
     private AwsService awsService;

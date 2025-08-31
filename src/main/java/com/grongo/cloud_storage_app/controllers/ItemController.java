@@ -34,7 +34,7 @@ public class ItemController {
         storageService.moveItem(itemId, moveItemRequest.getNewFolderId());
     }
 
-    @PatchMapping("/rename/{id}")
+    @PatchMapping("/rename/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleItemRename(
             @PathVariable Long itemId,
@@ -78,11 +78,11 @@ public class ItemController {
         return storageService.queryFiles(queryItemDto);
     }
 
-    @DeleteMapping("/{itemId}")
+    @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleItemsDelete(
-            @PathVariable List<Long> itemIds
+            @RequestParam List<Long> itemId
     ){
-        itemService.deleteItems(itemIds);
+        itemService.deleteItems(itemId);
     }
 }

@@ -1,9 +1,12 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
+import com.grongo.cloud_storage_app.aws.LinkTypes;
+import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.dto.FileDto;
 import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.services.items.FileService;
+import com.grongo.cloud_storage_app.services.items.impl.FileServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -30,12 +33,28 @@ public class FileController {
         );
     }
 
+    @GetMapping("/{fileId}")
+    @ResponseStatus(HttpStatus.OK)
+    public FileDto getFileMetadata(
+            @PathVariable Long fileId
+    ){
+        return fileService.getFileById(fileId);
+    }
+
     @GetMapping("/download/{id}")
     @ResponseStatus(HttpStatus.OK)
     public String handleFileDownload(
             @PathVariable Long id
     ){
-        return fileService.getSignedUrl(id);
+        return fileService.getSignedUrl(id, LinkTypes.DOWNLOAD);
+    }
+
+    @GetMapping("/preview/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public String handleFilePreview(
+            @PathVariable Long id
+    ){
+        return fileService.getSignedUrl(id, LinkTypes.PREVIEW);
     }
 
 

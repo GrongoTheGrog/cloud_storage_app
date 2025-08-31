@@ -14,10 +14,4 @@ import java.util.Optional;
 public interface FolderRepository extends JpaRepository<Folder, Long> {
     @Query("SELECT f FROM Folder f LEFT JOIN FETCH f.storedFiles WHERE f.id = :id")
     Optional<Folder> findByIdWithStoredFiles(@Param("id") Long id);
-
-    @Modifying
-    @Query("DELETE FROM Folder f WHERE f.user.id = userId")
-    void deleteByUserId(
-            @Param("userId") Long userId
-    );
 }

@@ -28,12 +28,10 @@ public class FolderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String handleFolderCreation(
+    public FolderDto handleFolderCreation(
             @RequestBody FolderRequest folderRequest
             ){
-        FolderDto folderDto = folderService.createFolder(folderRequest);
-
-        return "Folder " + folderDto.getName() + " created successfully.";
+        return folderService.createFolder(folderRequest);
     }
 
     @GetMapping("/{id}")

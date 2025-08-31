@@ -89,7 +89,8 @@ public class AuthController {
     @GetMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)
     public AccessTokenResponse refresh(
-            @CookieValue(name = "rt_session_id", required = true) Cookie refreshTokenCookieRequest
+            @CookieValue(name = "rt_session_id", required = true) Cookie refreshTokenCookieRequest,
+            CsrfToken csrfToken
     ){
         JwtRefresh refreshToken = jwtRefreshService
                 .findById(refreshTokenCookieRequest.getValue())

@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.services.items.impl;
 
 import com.grongo.cloud_storage_app.aws.AwsService;
+import com.grongo.cloud_storage_app.aws.LinkTypes;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
@@ -92,6 +93,8 @@ public class FileServiceImpl implements FileService {
                 .isPublic(Boolean.TRUE.equals(isPublic))
                 .build();
 
+        fileRepository.save(file);
+
         String fileType = awsService.uploadResourceFile(file, requestFile);
 
         file.setFileType(fileType);
@@ -102,10 +105,25 @@ public class FileServiceImpl implements FileService {
         return modelMapper.map(file, FileDto.class);
     }
 
+    @Override
+    public FileDto getFileById(Long fileId) {
+        User authenticated = authService.getCurrentAuthenticatedUser();
+
+        File file = fileRepository
+                .findById(fileId)
+                .orElseThrow(() -> new FileNotFoundException("File not found."));
+
+        storageService.checkItemPermission(file, authenticated, FilePermission.VIEW);
+
+        log.info("User {} requested metadata of file {}.", authenticated.getId(), file.getId());
+
+        return modelMapper.map(file, FileDto.class);
+    }
+
 
     @Override
     @Transactional(readOnly = true)
-    public String getSignedUrl(Long fileId) {
+    public String getSignedUrl(Long fileId, LinkTypes type) {
 
         User user = authService.getCurrentAuthenticatedUser();
 
@@ -121,7 +139,7 @@ public class FileServiceImpl implements FileService {
             return cachedLink;
         }
 
-        String url = awsService.getStorageFileLink(fileId);
+        String url = awsService.getStorageFileLink(file, type);
         downloadLinkCache.setKey(CacheKeys.fileLinkKey(fileId), url, duration);
         return url;
     }

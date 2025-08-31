@@ -10,9 +10,11 @@ import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
+import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -35,7 +38,9 @@ public class FolderServiceImpl implements FolderService {
     private final ModelMapper modelMapper;
     private final StorageService storageService;
     private final AuthService authService;
+    private final FileService fileService;
     private final ItemRepository itemRepository;
+    private final EntityManager entityManager;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -69,6 +74,7 @@ public class FolderServiceImpl implements FolderService {
                 .folder(parentFolder)
                 .owner(user)
                 .isPublic(isPublic)
+                .size(0L)
                 .build();
 
         folderRepository.save(folder);
@@ -81,7 +87,7 @@ public class FolderServiceImpl implements FolderService {
     @Override
     @Transactional(readOnly = true)
     public FolderNestedDto findFolderById(Long id) {
-        User user = authService.getCurrentAuthenticatedUser();
+       User user = authService.getCurrentAuthenticatedUser();
 
         Folder folder;
         if (id == null){
@@ -95,7 +101,7 @@ public class FolderServiceImpl implements FolderService {
 
             long size = 0;
             for (Item item : items){
-                size += item.getSize();
+                size += (item.getSize() != null ? item.getSize() : 0L);
             }
 
             folder.setSize(size);
@@ -149,13 +155,27 @@ public class FolderServiceImpl implements FolderService {
 
 
     @Override
+    @Transactional
     public void deleteFolder(Folder folder) {
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
 
         storageService.checkItemPermission(folder, authenticatedUser, FilePermission.DELETE);
 
+        List<Item> itemsToDelete = new ArrayList<>(folder.getStoredFiles());
+        for (Item item : itemsToDelete) {
+            if (item instanceof Folder f) {
+                deleteFolder(f);
+            } else if (item instanceof File file) {
+                fileService.deleteFile(file);
+            }
+            folder.getStoredFiles().remove(item);
+        }
+
         log.info("Deleting folder of id {}.", folder.getId());
-        storageService.updateSize(folder.getFolder(), -folder.getSize());
+        if (folder.getSize() != null && folder.getSize() > 0){
+            storageService.updateSize(folder.getFolder(), -folder.getSize());
+        }
+
         folderRepository.delete(folder);
     }
 

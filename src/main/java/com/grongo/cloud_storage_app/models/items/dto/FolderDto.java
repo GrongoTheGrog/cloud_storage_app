@@ -13,4 +13,5 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 public class FolderDto extends ItemDto{
     private Long size;
+    private String type = "FOLDER";
 }

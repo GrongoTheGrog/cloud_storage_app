@@ -5,6 +5,7 @@ import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,12 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     @Query(nativeQuery = true, value = "SELECT * FROM t_items WHERE folder_id IS NULL AND owner_id = ?")
     public List<Item> findAllRootItems(Long userId);
+
+    @Modifying
+    @Query("DELETE FROM File f WHERE f.owner.id = :userId")
+    public void deleteByUserId(
+            @Param("userId") Long userId
+    );
 
 
     @Query("SELECT i FROM Item i " +

@@ -28,6 +28,7 @@ public class Tag {
     private Long id;
     private String name;
     private String hex_color;
+    private String description;
     @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id")

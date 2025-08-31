@@ -5,8 +5,7 @@ import com.grongo.cloud_storage_app.aws.AwsService;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
-import com.grongo.cloud_storage_app.repositories.FileRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.repositories.*;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.user.impl.UserServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,16 +27,25 @@ import java.util.Optional;
 @ExtendWith(MockitoExtension.class)
 public class UserTests {
 
-    @Mock
-    AwsService awsService;
+
     @Spy
-    ModelMapper modelMapper;
+    private ModelMapper modelMapper;
     @Mock
-    FileRepository fileRepository;
+    private UserRepository userRepository;
     @Mock
-    UserRepository userRepository;
+    private AuthService authService;
     @Mock
-    AuthService authService;
+    private AwsService awsService;
+    @Mock
+    private FileRepository fileRepository;
+    @Mock
+    private ItemRepository itemRepository;
+    @Mock
+    private RefreshRepository refreshRepository;
+    @Mock
+    private TagRepository tagRepository;
+    @Mock
+    private SharedItemRepository sharedItemRepository;
 
     @InjectMocks
     UserServiceImpl userService;
