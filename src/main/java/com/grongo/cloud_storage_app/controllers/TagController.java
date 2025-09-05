@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.controllers;
 
 
 import com.grongo.cloud_storage_app.models.tag.dtos.TagCreationDto;
+import com.grongo.cloud_storage_app.models.tag.dtos.TagDto;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,13 +18,18 @@ public class TagController {
 
     private final TagService tagService;
 
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<TagDto> getTags(){
+        return tagService.getTags();
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void handleTagCreation(
+    public TagDto handleTagCreation(
             @Validated @RequestBody TagCreationDto tagCreationDto
             ){
-        tagService.createTag(tagCreationDto);
+        return tagService.createTag(tagCreationDto);
     }
 
     @DeleteMapping("/{tagId}")

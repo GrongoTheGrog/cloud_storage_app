@@ -18,6 +18,11 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             @Param("userId") Long userId
     );
 
+    @Query("SELECT t FROM Tag t JOIN user u WHERE u.id = :userId")
+    public List<Tag> findByUserId(
+            @Param("userId") Long userId
+    );
+
     @Modifying
     @Query("DELETE FROM Tag t WHERE t.user.id = :userId")
     public void deleteByUserId(

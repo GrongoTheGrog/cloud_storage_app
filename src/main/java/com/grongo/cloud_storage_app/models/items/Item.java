@@ -4,6 +4,7 @@ package com.grongo.cloud_storage_app.models.items;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.grongo.cloud_storage_app.models.TimeStamps;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.tag.TagJoin;
 import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
@@ -64,5 +65,8 @@ public class Item extends TimeStamps {
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "item")
     private Set<TagJoin> tagJoins;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "item")
+    private Set<SharedItem> sharedItems;
 
 }

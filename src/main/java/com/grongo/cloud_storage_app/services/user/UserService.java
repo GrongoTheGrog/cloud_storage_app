@@ -3,6 +3,7 @@ package com.grongo.cloud_storage_app.services.user;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserService{
@@ -13,4 +14,6 @@ public interface UserService{
     UserDto updateUsername(Long userId, String username);
 
     void deleteUser(Long userId);
+
+    List<UserDto> getSharingItemsUser();
 }

@@ -114,4 +114,15 @@ public class UserServiceImpl implements UserService {
 
         log.info("User {} deleted.", userId);
     }
+
+    @Override
+    public List<UserDto> getSharingItemsUser() {
+        User authenticated = authService.getCurrentAuthenticatedUser();
+
+        List<User> users = userRepository.getSharingItemsUsers(
+                authenticated.getId()
+        );
+
+        return users.stream().map(user -> modelMapper.map(user, UserDto.class)).toList();
+    }
 }

@@ -78,6 +78,7 @@ public class TagsIT {
         TagCreationDto tagCreationDto = TagCreationDto.builder()
                 .name("test")
                 .hex_color("243214")
+                .description("test")
                 .build();
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/tags")

@@ -4,14 +4,13 @@ package com.grongo.cloud_storage_app.integrationTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
+import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemRequest;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.repositories.FileRepository;
-import com.grongo.cloud_storage_app.repositories.FolderRepository;
-import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
+import com.grongo.cloud_storage_app.repositories.*;
+import com.grongo.cloud_storage_app.services.items.impl.ItemService;
 import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
 import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
@@ -57,6 +56,9 @@ public class SharedItemsIT {
 
     @Autowired
     SharedItemsService sharedItemsService;
+
+    @Autowired
+    ItemRepository itemRepository;
 
     @Autowired
     FileRepository fileRepository;
@@ -254,5 +256,31 @@ public class SharedItemsIT {
         List<SharedItem> sharedItemList = sharedItemRepository.findAll();
 
         assertThat(sharedItemList.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void testIfSharedItemsUserCanBeReturned(){
+
+        Item item = Item.builder().owner(sharingUser).build();
+
+        itemRepository.save(item);
+
+        SharedItem sharedItem = SharedItem.builder()
+                .item(item)
+                .user(currentAuthenticatedUser)
+                .owner(sharingUser)
+                .build();
+
+        sharedItemRepository.save(sharedItem);
+
+        List<User> ownerList = userRepository.getSharingItemsUsers(sharingUser.getId());
+        List<User> userList = userRepository.getSharingItemsUsers(currentAuthenticatedUser.getId());
+
+        assertThat(userList.size()).isEqualTo(1);
+        assertThat(ownerList.size()).isEqualTo(1);
+
+        assertThat(userList.getFirst().getId()).isEqualTo(sharingUser.getId());
+        assertThat(ownerList.getFirst().getId()).isEqualTo(currentAuthenticatedUser.getId());
+
     }
 }

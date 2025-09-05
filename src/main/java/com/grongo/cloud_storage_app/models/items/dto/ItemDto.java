@@ -1,7 +1,10 @@
 package com.grongo.cloud_storage_app.models.items.dto;
 
 import com.grongo.cloud_storage_app.models.items.Folder;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
+import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemDto;
 import com.grongo.cloud_storage_app.models.tag.TagJoin;
+import com.grongo.cloud_storage_app.models.tag.dtos.TagJoinDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import lombok.AllArgsConstructor;
@@ -31,6 +34,7 @@ public class ItemDto {
     private Date updated_at;
     private Boolean isPublic;
     private Long size = 0L;
-    private Set<TagJoin> tagJoins;
+    private Set<TagJoinDto> tagJoins;
+    private Set<SharedItemDto> sharedItems;
 
 }

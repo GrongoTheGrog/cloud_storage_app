@@ -20,7 +20,7 @@ public class TagCreationDto {
     private String name;
     @NotNull(message = "Color can't be null")
     @NotBlank(message = "Color can't be empty.")
-    @Pattern(regexp = "^([0-9a-fA-F]{3,6})$")
+    @Pattern(regexp = "^#([0-9a-fA-F]{3,6})$")
     private String hex_color;
     @NotNull
     @NotBlank
