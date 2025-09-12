@@ -15,6 +15,7 @@ import com.grongo.cloud_storage_app.repositories.JoinTagRepository;
 import com.grongo.cloud_storage_app.repositories.TagRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.FileChecker;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class TagServiceImpl implements TagService {
     private final JoinTagRepository joinTagRepository;
     private final StorageService storageService;
     private final ModelMapper modelMapper;
+    private final FileChecker fileChecker;
 
     @Override
     public TagDto createTag(TagCreationDto tagCreationDto) {
@@ -69,11 +71,14 @@ public class TagServiceImpl implements TagService {
 
     @Override
     public void bindTagToFile(Long tagId, Long itemId) {
+        User auth = authService.getCurrentAuthenticatedUser();
         Tag tag = findById(tagId);
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
         Optional<TagJoin> foundTagJoin = joinTagRepository.findByItemIdAndTagId(itemId, tagId);
         if (foundTagJoin.isPresent()) throw new TagConflictException("The tag '" + tag.getName() + "' is already bound to the item " + item.getPath());
+
+        fileChecker.checkItemPermission(item, auth, FilePermission.UPDATE);
 
         TagJoin tagJoin = TagJoin.builder()
                 .tag(tag)
@@ -91,7 +96,7 @@ public class TagServiceImpl implements TagService {
         Tag tag = findById(tagId);
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
-        storageService.checkItemPermission(item, authenticatedUser, FilePermission.UPDATE);
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.UPDATE);
 
         joinTagRepository.findByItemIdAndTagId(itemId, tagId)
                 .map(tagJoin -> {
@@ -104,8 +109,7 @@ public class TagServiceImpl implements TagService {
     public List<TagDto> getTags() {
         User authenticated = authService.getCurrentAuthenticatedUser();
         List<Tag> tagList = tagRepository.findByUserId(authenticated.getId());
-        List<TagDto> tagDtos = tagList.stream().map(tag -> modelMapper.map(tag, TagDto.class)).toList();
-        return tagDtos;
+        return tagList.stream().map(tag -> modelMapper.map(tag, TagDto.class)).toList();
     }
 
     @Override

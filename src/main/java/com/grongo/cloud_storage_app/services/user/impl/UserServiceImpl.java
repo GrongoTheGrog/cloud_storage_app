@@ -6,6 +6,7 @@ import com.grongo.cloud_storage_app.exceptions.HttpException;
 import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.items.File;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.repositories.*;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -117,12 +119,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getSharingItemsUser() {
-        User authenticated = authService.getCurrentAuthenticatedUser();
+        User auth = authService.getCurrentAuthenticatedUser();
+        List<SharedItem> sharedItems = sharedItemRepository.getAllSharingItems(auth.getId());
 
-        List<User> users = userRepository.getSharingItemsUsers(
-                authenticated.getId()
-        );
 
-        return users.stream().map(user -> modelMapper.map(user, UserDto.class)).toList();
+        List<UserDto> userDtos = new ArrayList<>();
+
+        for (SharedItem sharedItem : sharedItems){
+            if (sharedItem.getOwner().getId().equals(auth.getId())){
+                userDtos.add(modelMapper.map(sharedItem.getUser(), UserDto.class));
+            }else{
+                userDtos.add(modelMapper.map(sharedItem.getOwner(), UserDto.class));
+            }
+        }
+
+        return userDtos;
     }
 }

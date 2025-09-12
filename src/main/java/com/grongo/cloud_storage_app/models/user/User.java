@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.builder.ToStringExclude;
 import org.hibernate.annotations.Cascade;
 
 import java.util.List;
@@ -34,12 +35,4 @@ public class User extends TimeStamps {
 
     @Column(unique = true)
     String email;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "owner")
-    List<SharedItem> sharedItems;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
-    List<SharedItem> notOwnedSharedItems;
-
-
 }

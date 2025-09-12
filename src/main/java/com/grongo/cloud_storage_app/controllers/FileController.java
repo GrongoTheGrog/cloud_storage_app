@@ -4,6 +4,7 @@ package com.grongo.cloud_storage_app.controllers;
 import com.grongo.cloud_storage_app.aws.LinkTypes;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.dto.FileDto;
+import com.grongo.cloud_storage_app.models.items.dto.GetFileResponse;
 import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.impl.FileServiceImpl;
@@ -35,7 +36,7 @@ public class FileController {
 
     @GetMapping("/{fileId}")
     @ResponseStatus(HttpStatus.OK)
-    public FileDto getFileMetadata(
+    public GetFileResponse getFileMetadata(
             @PathVariable Long fileId
     ){
         return fileService.getFileById(fileId);

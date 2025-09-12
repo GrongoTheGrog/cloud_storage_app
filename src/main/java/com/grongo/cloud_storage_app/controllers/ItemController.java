@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Controller that holds the logic suitable for both files and folders
- */
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor

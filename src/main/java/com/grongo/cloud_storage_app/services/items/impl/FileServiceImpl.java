@@ -5,46 +5,27 @@ import com.grongo.cloud_storage_app.aws.LinkTypes;
 import com.grongo.cloud_storage_app.exceptions.storageExceptions.*;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
-import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.FileDto;
+import com.grongo.cloud_storage_app.models.items.dto.GetFileResponse;
+import com.grongo.cloud_storage_app.models.items.dto.GetFolderResponse;
 import com.grongo.cloud_storage_app.models.items.dto.UploadFileForm;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.FileTypeDetector;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.cache.impl.DownloadLinkCache;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
-import jakarta.annotation.PostConstruct;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import com.grongo.cloud_storage_app.services.cache.CacheKeys;
-import static com.grongo.cloud_storage_app.services.FileTypeDetector.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -53,16 +34,14 @@ import java.util.Optional;
 @Log4j2
 public class FileServiceImpl implements FileService {
 
-    private final S3Client s3Client;
     private final FolderRepository folderRepository;
     private final StorageService storageService;
     private final FileRepository fileRepository;
-    private final S3Presigner s3Presigner;
     private final AuthService authService;
     private final DownloadLinkCache downloadLinkCache;
-    private final FileTypeDetector fileTypeDetector;
     private final ModelMapper modelMapper;
     private final AwsService awsService;
+    private final FileChecker fileChecker;
 
     private final Duration duration = Duration.ofMinutes(10);
 
@@ -106,18 +85,18 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public FileDto getFileById(Long fileId) {
+    public GetFileResponse getFileById(Long fileId) {
         User authenticated = authService.getCurrentAuthenticatedUser();
 
         File file = fileRepository
                 .findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("File not found."));
 
-        storageService.checkItemPermission(file, authenticated, FilePermission.VIEW);
+        FileRole fileRole = fileChecker.checkItemPermission(file, authenticated, FilePermission.VIEW);
 
         log.info("User {} requested metadata of file {}.", authenticated.getId(), file.getId());
 
-        return modelMapper.map(file, FileDto.class);
+        return new GetFileResponse(modelMapper.map(file, FileDto.class), fileRole);
     }
 
 
@@ -131,7 +110,7 @@ public class FileServiceImpl implements FileService {
                 .findById(fileId)
                 .orElseThrow(() -> new FileNotFoundException("Could not find file with id of " + fileId));
 
-        storageService.checkItemPermission(file, user, FilePermission.VIEW);
+        fileChecker.checkItemPermission(file, user, FilePermission.VIEW);
 
         String cachedLink = downloadLinkCache.getKey(fileId.toString());
         if (cachedLink != null) {
@@ -150,7 +129,7 @@ public class FileServiceImpl implements FileService {
     public void deleteFile(File file){
         User user = authService.getCurrentAuthenticatedUser();
 
-        storageService.checkItemPermission(file, user, FilePermission.DELETE);
+        fileChecker.checkItemPermission(file, user, FilePermission.DELETE);
         storageService.updateSize(file.getFolder(), -file.getSize());
 
         log.info("Deleting file of id {}.", file.getId());
@@ -171,7 +150,7 @@ public class FileServiceImpl implements FileService {
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
         File file = optionalFile.get();
 
-        storageService.checkItemPermission(file, authenticatedUser, FilePermission.UPDATE);
+        fileChecker.checkItemPermission(file, authenticatedUser, FilePermission.UPDATE);
 
         String fileType = awsService.uploadResourceFile(file, uploadFileForm.getFile());
         String name = uploadFileForm.getFileName() != null ? uploadFileForm.getFileName() : file.getName();

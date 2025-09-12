@@ -2,16 +2,9 @@ package com.grongo.cloud_storage_app.controllers;
 
 
 import com.grongo.cloud_storage_app.exceptions.HttpException;
-import com.grongo.cloud_storage_app.exceptions.storageExceptions.FolderNotFoundException;
-import com.grongo.cloud_storage_app.models.items.Item;
-import com.grongo.cloud_storage_app.models.items.dto.FolderDto;
-import com.grongo.cloud_storage_app.models.items.dto.FolderNestedDto;
-import com.grongo.cloud_storage_app.models.items.dto.FolderRequest;
-import com.grongo.cloud_storage_app.models.items.dto.ItemDto;
+import com.grongo.cloud_storage_app.models.items.dto.*;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
-import com.grongo.cloud_storage_app.services.user.UserService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +29,7 @@ public class FolderController {
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public FolderNestedDto handleFindFolderById(
+    public GetFolderResponse handleFindFolderById(
             @PathVariable String id
     ){
         try{

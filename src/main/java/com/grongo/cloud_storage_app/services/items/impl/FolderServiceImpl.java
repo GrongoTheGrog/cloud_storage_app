@@ -14,7 +14,7 @@ import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
-import jakarta.persistence.EntityManager;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Service
@@ -40,7 +39,7 @@ public class FolderServiceImpl implements FolderService {
     private final AuthService authService;
     private final FileService fileService;
     private final ItemRepository itemRepository;
-    private final EntityManager entityManager;
+    private final FileChecker fileChecker;
 
     @Override
     public FolderDto createFolder(FolderRequest folderRequest) {
@@ -86,7 +85,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     @Transactional(readOnly = true)
-    public FolderNestedDto findFolderById(Long id) {
+    public GetFolderResponse findFolderById(Long id) {
        User user = authService.getCurrentAuthenticatedUser();
 
         Folder folder;
@@ -110,7 +109,7 @@ public class FolderServiceImpl implements FolderService {
             folder = folderRepository.findById(id).orElseThrow(() -> new FolderNotFoundException("Could not find folder"));
         }
 
-        storageService.checkItemPermission(folder, user, FilePermission.VIEW);
+        FileRole fileRole = fileChecker.checkItemPermission(folder, user, FilePermission.VIEW);
 
         List<ItemDto> storedItems = folder.getStoredFiles()
                 .stream()
@@ -127,7 +126,7 @@ public class FolderServiceImpl implements FolderService {
 
         FolderNestedDto folderNestedDto = modelMapper.map(folder, FolderNestedDto.class);
         folderNestedDto.setStoredFiles(storedItems);
-        return folderNestedDto;
+        return new GetFolderResponse(folderNestedDto, fileRole);
     }
 
 
@@ -139,7 +138,7 @@ public class FolderServiceImpl implements FolderService {
 
         Folder folder = folderRepository.findById(folderId).orElseThrow(() -> new FolderNotFoundException("Couldn't find folder."));
 
-        storageService.checkItemPermission(folder, user, FilePermission.VIEW);
+        fileChecker.checkItemPermission(folder, user, FilePermission.VIEW);
 
 
         List<Item> itemList = storageService.getItemsInFolder(folder, userId);
@@ -159,7 +158,7 @@ public class FolderServiceImpl implements FolderService {
     public void deleteFolder(Folder folder) {
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
 
-        storageService.checkItemPermission(folder, authenticatedUser, FilePermission.DELETE);
+        fileChecker.checkItemPermission(folder, authenticatedUser, FilePermission.DELETE);
 
         List<Item> itemsToDelete = new ArrayList<>(folder.getStoredFiles());
         for (Item item : itemsToDelete) {

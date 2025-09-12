@@ -20,6 +20,7 @@ import com.grongo.cloud_storage_app.services.cache.CacheKeys;
 import com.grongo.cloud_storage_app.services.cache.impl.QueryRequestCache;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
+import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -42,6 +43,7 @@ public class StorageServiceImpl implements StorageService {
     final private SharedItemRepository sharedItemRepository;
     final private ModelMapper modelMapper;
     final private QueryRequestCache queryRequestCache;
+    final private FileChecker fileChecker;
 
     @Override
     public void updatePath(Long itemId) {
@@ -112,12 +114,12 @@ public class StorageServiceImpl implements StorageService {
                     .findById(newParentId)
                     .orElseThrow(() -> new FolderNotFoundException("Could not find folder with id of " + newParentId));
 
-            checkItemPermission(parentFolder, user, FilePermission.MOVE);
+            fileChecker.checkItemPermission(parentFolder, user, FilePermission.MOVE);
 
             updateSize(parentFolder, foundItem.getSize());
         }
 
-        checkItemPermission(foundItem, user, FilePermission.MOVE);
+        fileChecker.checkItemPermission(foundItem, user, FilePermission.MOVE);
 
         //In case the resource is a folder, check if the new parent is not one of its subfolders
         if (foundItem.getType().equals("FOLDER") && checkIfFolderIsAncestor((Folder) foundItem, parentFolder)){
@@ -141,7 +143,7 @@ public class StorageServiceImpl implements StorageService {
         Long parentFolderId = foundItem.getFolder() == null ? null : foundItem.getFolder().getId();
         User user = authService.getCurrentAuthenticatedUser();
 
-        checkItemPermission(foundItem, user, FilePermission.UPDATE);
+        fileChecker.checkItemPermission(foundItem, user, FilePermission.UPDATE);
 
         log.info("Renaming item {} from {} to {}.", itemId, foundItem.getName(), name);
 
@@ -194,44 +196,11 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public void checkItemPermission(Item item, User user, FilePermission filePermission) {
-
-        if (Boolean.TRUE.equals(item.getIsPublic()) && filePermission.equals(FilePermission.VIEW)) return;
-
-        if (!user.getId().equals(item.getOwner().getId())) {
-
-            //first check if item is directly shared with user
-            Optional<SharedItem> sharedItem = sharedItemRepository.findByItemAndUser(item.getId(), user.getId());
-            if (sharedItem.isPresent()){
-                if (!sharedItem.get().getFileRole().hasPermission(filePermission)){
-                    throw new AccessDeniedException("User doesn't have permission to do such action.");
-                }
-                return;
-            }
-
-            //or search for a shared folder
-            List<SharedItem> sharedItems = sharedItemRepository.findByOwnerAndUser(item.getOwner().getId(), user.getId());
-
-            if (sharedItems.isEmpty()) throw new AccessDeniedException("User doesn't have permission to do such action.");
-
-            List<SharedItem> sharedItemFolderList = sharedItems.stream()
-                    .filter(sharedItemMapped-> item.getPath().startsWith(sharedItemMapped.getItem().getPath()))
-                    .sorted(Comparator.comparingInt( (SharedItem sharedItemSort) -> sharedItemSort.getItem().getPath().length()).reversed())
-                    .toList();
-
-            if (sharedItemFolderList.isEmpty() || !sharedItemFolderList.getFirst().getFileRole().hasPermission(filePermission)) {
-                throw new AccessDeniedException("User doesn't have permission to do such action.");
-            }
-        }
-    }
-
-    @Override
     public void updateItemVisibility(ItemVisibilityUpdateRequest itemVisibilityUpdateRequest, Long itemId){
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
-        checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
         item.setIsPublic(itemVisibilityUpdateRequest.getIsPublic());
 

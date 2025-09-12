@@ -16,6 +16,11 @@ import java.util.Optional;
 @Repository
 public interface SharedItemRepository extends JpaRepository<SharedItem, Long> {
 
+    @Query("SELECT si FROM SharedItem si JOIN user u JOIN owner o WHERE o.id = :userId OR u.id = :userId")
+    List<SharedItem> getAllSharingItems(
+            @Param("userId") Long userId
+    );
+
     @Query(nativeQuery = true, value = "SELECT * FROM t_shared_items WHERE item_id = ? AND user_id = ?")
     Optional<SharedItem> findByItemAndUser(Long itemId, Long userId);
 

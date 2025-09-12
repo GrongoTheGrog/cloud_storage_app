@@ -1,8 +1,11 @@
 package com.grongo.cloud_storage_app.controllers;
 
 
+import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.user.dto.UserDto;
 import com.grongo.cloud_storage_app.services.user.UserService;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,6 +21,14 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public UserDto getUserById(
+            @RequestParam @NotNull @NotBlank String email
+    ){
+        return userService.findByEmail(email).orElseGet(() -> null);
+    }
 
     @PatchMapping("/{userId}/updatePicture")
     @ResponseStatus(HttpStatus.OK)

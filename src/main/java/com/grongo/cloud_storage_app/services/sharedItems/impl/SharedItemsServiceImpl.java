@@ -15,6 +15,7 @@ import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.FileChecker;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
@@ -32,6 +33,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final SharedItemRepository sharedItemRepository;
+    private final FileChecker fileChecker;
 
     @Override
     public void createSharedItem(SharedItemRequest sharedItemRequest) {
@@ -45,7 +47,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
             throw new AccessDeniedException("User has to be the resource owner to grant admin permissions.");
         }
 
-        storageService.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
 
 
@@ -93,11 +95,11 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         if (sharedItemRequest.getFileRole() == FileRole.ADMIN_ROLE && !authenticatedUser.equals(item.getOwner())){
             throw new AccessDeniedException("User has to be the resource owner to grant admin permissions.");
         }
-        storageService.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
         //  THEN CHECK IF THE USER HAS ACCESS OVER THE PREVIOUS FILE
         if (!sharedItem.get().getItem().equals(item)){
-            storageService.checkItemPermission(sharedItem.get().getItem(), authenticatedUser, FilePermission.SHARE);
+            fileChecker.checkItemPermission(sharedItem.get().getItem(), authenticatedUser, FilePermission.SHARE);
         }
 
 
@@ -114,7 +116,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         Optional<SharedItem> sharedItem = sharedItemRepository.findById(id);
 
         if (sharedItem.isEmpty()) return;
-        storageService.checkItemPermission(sharedItem.get().getItem(), user, FilePermission.SHARE);
+        fileChecker.checkItemPermission(sharedItem.get().getItem(), user, FilePermission.SHARE);
 
         sharedItemRepository.delete(sharedItem.get());
     }

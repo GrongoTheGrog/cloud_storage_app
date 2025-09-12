@@ -7,8 +7,6 @@ import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.services.items.FileService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
-import com.grongo.cloud_storage_app.services.items.StorageService;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

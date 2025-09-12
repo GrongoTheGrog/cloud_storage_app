@@ -15,11 +15,4 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
-
-
-    @Query("SELECT u FROM User u " +
-            "LEFT JOIN u.sharedItems si " +
-            "LEFT JOIN u.notOwnedSharedItems nsi " +
-            "WHERE si.user.id = :ownerId OR nsi.owner.id = :ownerId")
-    List<User> getSharingItemsUsers(@Param("ownerId") Long ownerId);
 }

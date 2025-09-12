@@ -273,14 +273,14 @@ public class SharedItemsIT {
 
         sharedItemRepository.save(sharedItem);
 
-        List<User> ownerList = userRepository.getSharingItemsUsers(sharingUser.getId());
-        List<User> userList = userRepository.getSharingItemsUsers(currentAuthenticatedUser.getId());
+        List<SharedItem> ownerList = sharedItemRepository.getAllSharingItems(sharingUser.getId());
+        List<SharedItem> userList = sharedItemRepository.getAllSharingItems(currentAuthenticatedUser.getId());
 
         assertThat(userList.size()).isEqualTo(1);
         assertThat(ownerList.size()).isEqualTo(1);
 
-        assertThat(userList.getFirst().getId()).isEqualTo(sharingUser.getId());
-        assertThat(ownerList.getFirst().getId()).isEqualTo(currentAuthenticatedUser.getId());
+        assertThat(userList.getFirst().getOwner().getId()).isEqualTo(sharingUser.getId());
+        assertThat(ownerList.getFirst().getUser().getId()).isEqualTo(currentAuthenticatedUser.getId());
 
     }
 }
