@@ -78,7 +78,7 @@ public class FileServiceImpl implements FileService {
 
         file.setFileType(fileType);
 
-        storageService.updateSize(folder, file.getSize());
+        storageService.updateTreeSize(folder, file.getSize());
         storageService.updatePath(file);
 
         return modelMapper.map(file, FileDto.class);
@@ -130,12 +130,13 @@ public class FileServiceImpl implements FileService {
         User user = authService.getCurrentAuthenticatedUser();
 
         fileChecker.checkItemPermission(file, user, FilePermission.DELETE);
-        storageService.updateSize(file.getFolder(), -file.getSize());
+
+        awsService.deleteResourceFile(file.getId());
 
         log.info("Deleting file of id {}.", file.getId());
         fileRepository.deleteById(file.getId());
 
-        awsService.deleteResourceFile(file.getId());
+        storageService.updateTreeSize(file.getFolder(), -file.getSize());
     }
 
     @Override
@@ -163,13 +164,12 @@ public class FileServiceImpl implements FileService {
         file.setSize(uploadFileForm.getFile().getSize());
         file.setFileType(fileType);
 
-        //only update the path if the file has changed the name
         if (!previousName.equals(file.getName())){
             storageService.updatePath(file);
         }else{
             fileRepository.save(file);
         }
 
-        storageService.updateSize(file.getFolder(), file.getSize() - previousSize);
+        storageService.updateTreeSize(file.getFolder(), file.getSize() - previousSize);
     }
 }

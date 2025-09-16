@@ -203,14 +203,17 @@ public class StorageServiceImpl implements StorageService {
         fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
         item.setIsPublic(itemVisibilityUpdateRequest.getIsPublic());
+        itemRepository.save(item);
+        log.info("Set isPublic of item {} to {}.", item.getId(), itemVisibilityUpdateRequest.isPublic);
 
-        // propagate to children if folder
         if (item instanceof Folder folder && folder.getStoredFiles() != null){
             Queue<Item> queue = new LinkedList<>(folder.getStoredFiles());
 
             while(!queue.isEmpty()){
                 Item popped = queue.poll();
                 popped.setIsPublic(itemVisibilityUpdateRequest.getIsPublic());
+                log.info("Set isPublic of item {} to {}.", popped.getId(), itemVisibilityUpdateRequest.isPublic);
+                itemRepository.save(popped);
                 if (popped instanceof Folder subFolder && subFolder.getStoredFiles() != null){
                     queue.addAll(subFolder.getStoredFiles());
                 }
@@ -224,6 +227,15 @@ public class StorageServiceImpl implements StorageService {
             Long prevSize = item.getSize() == null ? 0 : item.getSize();
             item.setSize(prevSize + diff);
             itemRepository.save(item);
+        }
+    }
+
+    @Override
+    public void updateTreeSize(Item item, Long diff) {
+        Item current = item;
+        while(current != null){
+            updateSize(current, diff);
+            current = current.getFolder();
         }
     }
 

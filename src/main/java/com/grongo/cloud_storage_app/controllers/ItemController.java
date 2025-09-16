@@ -2,8 +2,10 @@ package com.grongo.cloud_storage_app.controllers;
 
 
 import com.grongo.cloud_storage_app.models.items.dto.*;
+import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemDto;
 import com.grongo.cloud_storage_app.services.items.StorageService;
 import com.grongo.cloud_storage_app.services.items.impl.ItemService;
+import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ public class ItemController {
     private final StorageService storageService;
     private final TagService tagService;
     private final ItemService itemService;
+    private final SharedItemsService sharedItemsService;
 
     @PatchMapping("/move/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -56,6 +59,14 @@ public class ItemController {
             @PathVariable Long tagId
     ){
         tagService.bindTagToFile(tagId, itemId);
+    }
+
+    @GetMapping("/{itemId}/sharedUsers")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<SharedItemDto> getSharingUsers(
+            @PathVariable Long itemId
+    ){
+        return sharedItemsService.getSharingUsers(itemId);
     }
 
     @DeleteMapping("/{itemId}/tag/{tagId}")

@@ -38,6 +38,8 @@ public interface StorageService {
 
     void updateSize(Item item, Long diff);
 
+    void updateTreeSize(Item item, Long diff);
+
     List<ItemDto> queryFiles(QueryItemDto queryItemDto);
 
     void deleteItems(List<Long> ids);

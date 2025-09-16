@@ -8,8 +8,10 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundExc
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
+import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemRequest;
 import com.grongo.cloud_storage_app.models.user.User;
+import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
@@ -20,8 +22,10 @@ import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -34,6 +38,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
     private final UserRepository userRepository;
     private final SharedItemRepository sharedItemRepository;
     private final FileChecker fileChecker;
+    private final ModelMapper modelMapper;
 
     @Override
     public void createSharedItem(SharedItemRequest sharedItemRequest) {
@@ -119,5 +124,16 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         fileChecker.checkItemPermission(sharedItem.get().getItem(), user, FilePermission.SHARE);
 
         sharedItemRepository.delete(sharedItem.get());
+    }
+
+    @Override
+    public List<SharedItemDto> getSharingUsers(Long itemId) {
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item."));
+        User authenticated = authService.getCurrentAuthenticatedUser();
+
+        fileChecker.checkItemPermission(item, authenticated, FilePermission.VIEW);
+
+        List<SharedItem> sharedItems = sharedItemRepository.getByItemId(itemId);
+        return sharedItems.stream().map(si -> modelMapper.map(si, SharedItemDto.class)).toList();
     }
 }
