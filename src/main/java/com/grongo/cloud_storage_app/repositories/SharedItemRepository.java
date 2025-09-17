@@ -26,8 +26,12 @@ public interface SharedItemRepository extends JpaRepository<SharedItem, Long> {
             @Param("itemId") Long itemId
     );
 
-    @Query(nativeQuery = true, value = "SELECT * FROM t_shared_items WHERE item_id = ? AND user_id = ?")
-    Optional<SharedItem> findByItemAndUser(Long itemId, Long userId);
+    @Query("SELECT si FROM SharedItem si WHERE si.item.id = :itemId AND si.user.id = :userId")
+    Optional<SharedItem> findByItemAndUser(
+            @Param("itemId") Long itemId,
+            @Param("userId") Long userId
+    );
+
 
     @Query(nativeQuery = true, value = "SELECT * FROM t_shared_items WHERE owner_id = ? AND user_id = ?")
     public List<SharedItem> findByOwnerAndUser(Long ownerId, Long userId);

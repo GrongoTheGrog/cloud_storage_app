@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface SharedItemsService {
 
-    void createSharedItem(SharedItemRequest sharedItemRequest);
+    SharedItemDto createSharedItem(SharedItemRequest sharedItemRequest);
     void updateSharedItem(SharedItemRequest sharedItemRequest, Long id);
     void deleteSharedItem(Long id);
 

@@ -41,7 +41,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
     private final ModelMapper modelMapper;
 
     @Override
-    public void createSharedItem(SharedItemRequest sharedItemRequest) {
+    public SharedItemDto createSharedItem(SharedItemRequest sharedItemRequest) {
         Long itemId = sharedItemRequest.getItemId();
 
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
@@ -54,8 +54,6 @@ public class SharedItemsServiceImpl implements SharedItemsService {
 
         fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
-
-
         User foundTargetUser = userRepository.findByEmail(sharedItemRequest.getEmail()).orElseThrow(() ->
                 new UserNotFoundException("Could not find email with email " + sharedItemRequest.getEmail()
             )
@@ -65,7 +63,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
             throw new TargetEmailConflictException("Provided email is the same as the owner email.");
         }
 
-        Optional<SharedItem> foundSharedItem = sharedItemRepository.findByItemAndUser(item.getId(), authenticatedUser.getId());
+        Optional<SharedItem> foundSharedItem = sharedItemRepository.findByItemAndUser(item.getId(), foundTargetUser.getId());
 
         if (foundSharedItem.isPresent()) {
             throw new DuplicateSharedItemException("The given resource has already been shared with the email " + sharedItemRequest.getEmail());
@@ -79,6 +77,8 @@ public class SharedItemsServiceImpl implements SharedItemsService {
                 .build();
 
         sharedItemRepository.save(sharedItem);
+
+        return modelMapper.map(sharedItem, SharedItemDto.class);
     }
 
     @Override

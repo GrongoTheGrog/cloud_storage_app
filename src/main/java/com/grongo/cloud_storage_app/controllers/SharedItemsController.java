@@ -1,5 +1,6 @@
 package com.grongo.cloud_storage_app.controllers;
 
+import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemRequest;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import com.grongo.cloud_storage_app.services.sharedItems.impl.SharedItemsServiceImpl;
@@ -16,11 +17,11 @@ public class SharedItemsController {
     private final SharedItemsService sharedItemsService;
 
     @PostMapping(consumes = "application/json")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void handleItemSharing(
+    @ResponseStatus(HttpStatus.CREATED)
+    public SharedItemDto handleItemSharing(
             @Validated @RequestBody SharedItemRequest sharedItemRequest
     ){
-        sharedItemsService.createSharedItem(sharedItemRequest);
+        return sharedItemsService.createSharedItem(sharedItemRequest);
     }
 
     @PutMapping(consumes = "application/json", path = "/{id}")

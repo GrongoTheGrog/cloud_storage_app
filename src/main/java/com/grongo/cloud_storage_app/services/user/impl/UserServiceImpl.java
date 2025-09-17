@@ -23,9 +23,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -123,7 +121,7 @@ public class UserServiceImpl implements UserService {
         List<SharedItem> sharedItems = sharedItemRepository.getAllSharingItems(auth.getId());
 
 
-        List<UserDto> userDtos = new ArrayList<>();
+        Set<UserDto> userDtos = new HashSet<>();
 
         for (SharedItem sharedItem : sharedItems){
             if (sharedItem.getOwner().getId().equals(auth.getId())){
@@ -133,6 +131,6 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        return userDtos;
+        return userDtos.stream().toList();
     }
 }
