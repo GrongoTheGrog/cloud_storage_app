@@ -4,16 +4,20 @@ package com.grongo.cloud_storage_app.models.items;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.grongo.cloud_storage_app.models.TimeStamps;
+import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.tag.TagJoin;
 import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.builder.HashCodeExclude;
+import org.apache.commons.lang3.builder.ToStringExclude;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @EqualsAndHashCode(callSuper = true)
@@ -46,6 +50,8 @@ public class Item extends TimeStamps {
     @ManyToOne
     @JoinColumn(name = "owner_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
+    @ToStringExclude
+    @HashCodeExclude
     private User owner;
 
     @ManyToOne
@@ -63,6 +69,8 @@ public class Item extends TimeStamps {
     private Long size = 0L;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "item")
-    private Set<TagJoin> tagJoins;
+    @ToStringExclude
+    @HashCodeExclude
+    private List<TagJoin> tagJoins;
 
 }

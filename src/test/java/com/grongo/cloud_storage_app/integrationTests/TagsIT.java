@@ -11,7 +11,8 @@ import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.JoinTagRepository;
 import com.grongo.cloud_storage_app.repositories.TagRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import java.util.List;
 
 import static com.grongo.cloud_storage_app.TestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -36,7 +38,9 @@ public class TagsIT {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private JwtService jwtService;
+    private JwtRefreshService jwtRefreshService;
+    @Autowired
+    private JwtAccessService jwtAccessService;
     @Autowired
     private TagRepository tagRepository;
     @Autowired
@@ -62,11 +66,10 @@ public class TagsIT {
                 .build();
 
         userRepository.save(currentAuthenticatedUser);
-        accessToken = jwtService.createAccessToken(
-                currentAuthenticatedUser.getId(),
-                currentAuthenticatedUser.getEmail()
-        )
-                .getAccessToken();
+        accessToken = jwtAccessService.create(
+                        currentAuthenticatedUser.getId(),
+                        currentAuthenticatedUser.getEmail()
+        );
     }
 
 
@@ -75,10 +78,12 @@ public class TagsIT {
         TagCreationDto tagCreationDto = TagCreationDto.builder()
                 .name("test")
                 .hex_color("243214")
+                .description("test")
                 .build();
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/tags")
                 .contentType("application/json")
+                .with(csrf())
                 .header("Authorization", "Bearer " + accessToken)
                 .content(objectMapper.writeValueAsString(tagCreationDto))
         ).andExpect(status().isCreated());
@@ -95,6 +100,7 @@ public class TagsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/tags/" + tag.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
         ).andExpect(status().isNoContent());
 
         List<Tag> tagList = tagRepository.findAll();
@@ -110,6 +116,7 @@ public class TagsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/" + folder.getId() + "/tag/" + tag.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
         ).andExpect(status().isCreated());
 
 
@@ -130,6 +137,7 @@ public class TagsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/items/" + folder.getId() + "/tag/" + tag.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
         ).andExpect(status().isNoContent());
 
 

@@ -4,7 +4,9 @@ import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -14,11 +16,31 @@ import java.util.Optional;
 @Repository
 public interface SharedItemRepository extends JpaRepository<SharedItem, Long> {
 
-    @Query(nativeQuery = true, value = "SELECT * FROM t_shared_items WHERE item_id = ? AND user_id = ?")
-    Optional<SharedItem> findByItemAndUser(Long itemId, Long userId);
+    @Query("SELECT si FROM SharedItem si JOIN user u JOIN owner o WHERE o.id = :userId OR u.id = :userId")
+    List<SharedItem> getAllSharingItems(
+            @Param("userId") Long userId
+    );
+
+    @Query("SELECT si FROM SharedItem si JOIN item i WHERE i.id = :itemId")
+    List<SharedItem> getByItemId(
+            @Param("itemId") Long itemId
+    );
+
+    @Query("SELECT si FROM SharedItem si WHERE si.item.id = :itemId AND si.user.id = :userId")
+    Optional<SharedItem> findByItemAndUser(
+            @Param("itemId") Long itemId,
+            @Param("userId") Long userId
+    );
+
 
     @Query(nativeQuery = true, value = "SELECT * FROM t_shared_items WHERE owner_id = ? AND user_id = ?")
     public List<SharedItem> findByOwnerAndUser(Long ownerId, Long userId);
+
+    @Modifying
+    @Query("DELETE FROM SharedItem si WHERE si.owner.id = :userId OR si.user.id = :userId")
+    public void deleteByUserId(
+            @Param("userId") Long userId
+    );
 
     @Query("SELECT si FROM SharedItem si " +
             "JOIN si.user u " +

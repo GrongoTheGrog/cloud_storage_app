@@ -7,9 +7,10 @@ import com.grongo.cloud_storage_app.models.items.dto.*;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
 import com.grongo.cloud_storage_app.services.items.FolderService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,6 +23,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -45,16 +48,14 @@ public class StorageIT {
 
     @Autowired
     UserRepository userRepository;
-
     @Autowired
     StorageService storageService;
-
     @Autowired
-    JwtService jwtService;
-
+    private JwtRefreshService jwtRefreshService;
+    @Autowired
+    private JwtAccessService jwtAccessService;
     @Autowired
     FolderRepository folderRepository;
-
     @Autowired
     FolderService folderService;
 
@@ -79,7 +80,7 @@ public class StorageIT {
         userRepository.save(user);
         currentAuthenticatedUser = user;
 
-        accessToken = jwtService.createAccessToken(user.getId(), "test").getAccessToken();
+        accessToken = jwtAccessService.create(user.getId(), "test");
     }
 
 
@@ -98,6 +99,7 @@ public class StorageIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + folder1.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moveItemRequestJson)
         ).andExpect(status().isNoContent());

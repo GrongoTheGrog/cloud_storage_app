@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.InvalidTokenException;
 import com.grongo.cloud_storage_app.exceptions.tokenExceptions.MissingTokenException;
 import com.grongo.cloud_storage_app.models.exceptions.ExceptionResponse;
-import com.grongo.cloud_storage_app.services.auth.impl.JwtServiceImpl;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtFilterCheck extends OncePerRequestFilter {
 
-    private final JwtServiceImpl jwtService;
+    private final JwtAccessService jwtAccessService;
 
     @Override
     protected void doFilterInternal(
@@ -37,25 +37,20 @@ public class JwtFilterCheck extends OncePerRequestFilter {
             FilterChain filterChain
             ) throws ServletException, IOException {
 
-        Cookie[] cookies = request.getCookies();
         try{
 
             String bearerHeader = request.getHeader("Authorization");
 
             if (bearerHeader == null){
-                throw new MissingTokenException("Missing Authorization header.");
+                throw new MissingTokenException();
             }
 
-            List<String> bearerToken = Arrays.stream(bearerHeader.split(" ")).toList();
+            String accessToken = bearerHeader.substring(7);
 
-            if (!bearerToken.getFirst().equals("Bearer")){
-                throw  new MissingTokenException("Authorization header is not a Bearer token.");
-            }
-
-            String accessToken = bearerToken.get(1);
+            if (accessToken.equals("null")) throw new MissingTokenException();
 
             //VERIFIES THE TOKEN AND THROW IF INVALID
-            Claims claims = jwtService.verifyToken(accessToken);
+            Claims claims = jwtAccessService.verify(accessToken);
 
             Authentication auth = new UsernamePasswordAuthenticationToken(claims.get("email"), null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
@@ -66,12 +61,14 @@ public class JwtFilterCheck extends OncePerRequestFilter {
             writeErrorResponse(401, "Missing token.", e.getMessage(), response);
         }catch (InvalidTokenException e){
             writeErrorResponse(401, "Invalid token.", e.getMessage(), response);
+        }catch (Exception e){
+            writeErrorResponse(401, "Error parsing token.", e.getMessage(), response);
         }
 
     }
 
     private void writeErrorResponse(int status, String message, String details, HttpServletResponse response) throws IOException {
-        ExceptionResponse exceptionResponse = new ExceptionResponse(status, message, details);
+        ExceptionResponse exceptionResponse = new ExceptionResponse(status, message, details, true);
         ObjectMapper objectMapper = new ObjectMapper();
 
         response.setStatus(status);

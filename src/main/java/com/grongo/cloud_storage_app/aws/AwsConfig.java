@@ -1,4 +1,4 @@
-package com.grongo.cloud_storage_app.config;
+package com.grongo.cloud_storage_app.aws;
 
 import org.springframework.context.annotation.Bean;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;

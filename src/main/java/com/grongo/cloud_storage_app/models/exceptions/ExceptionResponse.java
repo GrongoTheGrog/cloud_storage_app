@@ -8,24 +8,27 @@ import lombok.Data;
 import java.util.Date;
 
 @Data
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
 public class ExceptionResponse {
 
     public ExceptionResponse(
             int status,
             String error,
-            String message
+            String message,
+            boolean isRefreshNeeded
     ){
         this.message = message;
         this.status = status;
-        this.timestamp = new Date().toString();
+        timestamp = new Date().toString();
         this.error = error;
+        this.isRefreshNeeded = isRefreshNeeded;
     }
 
     int status;
     String error;
     String message;
     String timestamp;
+    boolean isRefreshNeeded;
 
 }

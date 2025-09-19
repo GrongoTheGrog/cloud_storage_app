@@ -9,9 +9,11 @@ import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import java.util.Optional;
 import static com.grongo.cloud_storage_app.TestUtils.getFile;
 import static com.grongo.cloud_storage_app.TestUtils.getFolder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -47,7 +50,9 @@ public class FileIT {
     @Autowired
     StorageService storageService;
     @Autowired
-    JwtService jwtService;
+    JwtAccessService jwtAccessService;
+    @Autowired
+    JwtRefreshService jwtRefreshService;
     @Autowired
     FolderRepository folderRepository;
 
@@ -72,7 +77,7 @@ public class FileIT {
         userRepository.save(user);
         currentAuthenticatedUser = user;
 
-        accessToken = jwtService.createAccessToken(user.getId(), "test").getAccessToken();
+        accessToken = jwtAccessService.create(user.getId(), user.getEmail());
     }
 
     @Test
@@ -90,6 +95,7 @@ public class FileIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + file.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moveItemRequestJson)
         ).andExpect(status().isNoContent());
@@ -114,6 +120,7 @@ public class FileIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/move/" + file.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(moveItemRequestJson)
         ).andExpect(status().isNoContent());
@@ -145,6 +152,7 @@ public class FileIT {
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/items/visibility/" + file.getId())
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(objectMapper.writeValueAsString(request))
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());

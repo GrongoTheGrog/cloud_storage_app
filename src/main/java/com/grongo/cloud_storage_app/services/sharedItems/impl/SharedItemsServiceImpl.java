@@ -8,19 +8,24 @@ import com.grongo.cloud_storage_app.exceptions.storageExceptions.ItemNotFoundExc
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
+import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemDto;
 import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemRequest;
 import com.grongo.cloud_storage_app.models.user.User;
+import com.grongo.cloud_storage_app.models.user.dto.AuthenticateUser;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.FileChecker;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -32,9 +37,11 @@ public class SharedItemsServiceImpl implements SharedItemsService {
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
     private final SharedItemRepository sharedItemRepository;
+    private final FileChecker fileChecker;
+    private final ModelMapper modelMapper;
 
     @Override
-    public void createSharedItem(SharedItemRequest sharedItemRequest) {
+    public SharedItemDto createSharedItem(SharedItemRequest sharedItemRequest) {
         Long itemId = sharedItemRequest.getItemId();
 
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
@@ -45,9 +52,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
             throw new AccessDeniedException("User has to be the resource owner to grant admin permissions.");
         }
 
-        storageService.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
-
-
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
         User foundTargetUser = userRepository.findByEmail(sharedItemRequest.getEmail()).orElseThrow(() ->
                 new UserNotFoundException("Could not find email with email " + sharedItemRequest.getEmail()
@@ -58,7 +63,7 @@ public class SharedItemsServiceImpl implements SharedItemsService {
             throw new TargetEmailConflictException("Provided email is the same as the owner email.");
         }
 
-        Optional<SharedItem> foundSharedItem = sharedItemRepository.findByItemAndUser(item.getId(), authenticatedUser.getId());
+        Optional<SharedItem> foundSharedItem = sharedItemRepository.findByItemAndUser(item.getId(), foundTargetUser.getId());
 
         if (foundSharedItem.isPresent()) {
             throw new DuplicateSharedItemException("The given resource has already been shared with the email " + sharedItemRequest.getEmail());
@@ -72,6 +77,8 @@ public class SharedItemsServiceImpl implements SharedItemsService {
                 .build();
 
         sharedItemRepository.save(sharedItem);
+
+        return modelMapper.map(sharedItem, SharedItemDto.class);
     }
 
     @Override
@@ -93,11 +100,11 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         if (sharedItemRequest.getFileRole() == FileRole.ADMIN_ROLE && !authenticatedUser.equals(item.getOwner())){
             throw new AccessDeniedException("User has to be the resource owner to grant admin permissions.");
         }
-        storageService.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.SHARE);
 
         //  THEN CHECK IF THE USER HAS ACCESS OVER THE PREVIOUS FILE
         if (!sharedItem.get().getItem().equals(item)){
-            storageService.checkItemPermission(sharedItem.get().getItem(), authenticatedUser, FilePermission.SHARE);
+            fileChecker.checkItemPermission(sharedItem.get().getItem(), authenticatedUser, FilePermission.SHARE);
         }
 
 
@@ -114,8 +121,19 @@ public class SharedItemsServiceImpl implements SharedItemsService {
         Optional<SharedItem> sharedItem = sharedItemRepository.findById(id);
 
         if (sharedItem.isEmpty()) return;
-        storageService.checkItemPermission(sharedItem.get().getItem(), user, FilePermission.SHARE);
+        fileChecker.checkItemPermission(sharedItem.get().getItem(), user, FilePermission.SHARE);
 
         sharedItemRepository.delete(sharedItem.get());
+    }
+
+    @Override
+    public List<SharedItemDto> getSharingUsers(Long itemId) {
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item."));
+        User authenticated = authService.getCurrentAuthenticatedUser();
+
+        fileChecker.checkItemPermission(item, authenticated, FilePermission.VIEW);
+
+        List<SharedItem> sharedItems = sharedItemRepository.getByItemId(itemId);
+        return sharedItems.stream().map(si -> modelMapper.map(si, SharedItemDto.class)).toList();
     }
 }

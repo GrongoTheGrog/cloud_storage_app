@@ -2,7 +2,10 @@ package com.grongo.cloud_storage_app.controllers;
 
 
 import com.grongo.cloud_storage_app.models.items.dto.*;
+import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemDto;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.ItemService;
+import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,9 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Controller that holds the logic suitable for both files and folders
- */
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor
@@ -22,6 +22,8 @@ public class ItemController {
 
     private final StorageService storageService;
     private final TagService tagService;
+    private final ItemService itemService;
+    private final SharedItemsService sharedItemsService;
 
     @PatchMapping("/move/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -32,7 +34,7 @@ public class ItemController {
         storageService.moveItem(itemId, moveItemRequest.getNewFolderId());
     }
 
-    @PatchMapping("/rename/{id}")
+    @PatchMapping("/rename/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleItemRename(
             @PathVariable Long itemId,
@@ -59,6 +61,14 @@ public class ItemController {
         tagService.bindTagToFile(tagId, itemId);
     }
 
+    @GetMapping("/{itemId}/sharedUsers")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<SharedItemDto> getSharingUsers(
+            @PathVariable Long itemId
+    ){
+        return sharedItemsService.getSharingUsers(itemId);
+    }
+
     @DeleteMapping("/{itemId}/tag/{tagId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void handleTagUnbind(
@@ -74,5 +84,13 @@ public class ItemController {
             QueryItemDto queryItemDto
             ){
         return storageService.queryFiles(queryItemDto);
+    }
+
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void handleItemsDelete(
+            @RequestParam List<Long> itemId
+    ){
+        itemService.deleteItems(itemId);
     }
 }

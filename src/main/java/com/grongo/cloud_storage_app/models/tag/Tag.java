@@ -1,6 +1,7 @@
 package com.grongo.cloud_storage_app.models.tag;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.grongo.cloud_storage_app.models.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -27,11 +28,13 @@ public class Tag {
     private Long id;
     private String name;
     private String hex_color;
+    private String description;
     @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "user_id")
     private User user;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "tag")
+    @JsonIgnore
     private Set<TagJoin> tagJoins = new HashSet<>();
 
 }

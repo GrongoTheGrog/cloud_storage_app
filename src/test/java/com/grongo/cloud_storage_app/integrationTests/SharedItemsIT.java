@@ -4,15 +4,15 @@ package com.grongo.cloud_storage_app.integrationTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.grongo.cloud_storage_app.models.items.File;
 import com.grongo.cloud_storage_app.models.items.Folder;
+import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.items.dto.MoveItemRequest;
 import com.grongo.cloud_storage_app.models.sharedItems.SharedItem;
 import com.grongo.cloud_storage_app.models.sharedItems.dto.SharedItemRequest;
 import com.grongo.cloud_storage_app.models.user.User;
-import com.grongo.cloud_storage_app.repositories.FileRepository;
-import com.grongo.cloud_storage_app.repositories.FolderRepository;
-import com.grongo.cloud_storage_app.repositories.SharedItemRepository;
-import com.grongo.cloud_storage_app.repositories.UserRepository;
-import com.grongo.cloud_storage_app.services.auth.JwtService;
+import com.grongo.cloud_storage_app.repositories.*;
+import com.grongo.cloud_storage_app.services.items.impl.ItemService;
+import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
+import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.sharedItems.FileRole;
 import com.grongo.cloud_storage_app.services.sharedItems.SharedItemsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.util.List;
 
 import static com.grongo.cloud_storage_app.TestUtils.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -40,7 +41,9 @@ public class SharedItemsIT {
     UserRepository userRepository;
 
     @Autowired
-    JwtService jwtService;
+    private JwtRefreshService jwtRefreshService;
+    @Autowired
+    private JwtAccessService jwtAccessService;
 
     @Autowired
     MockMvc mockMvc;
@@ -53,6 +56,9 @@ public class SharedItemsIT {
 
     @Autowired
     SharedItemsService sharedItemsService;
+
+    @Autowired
+    ItemRepository itemRepository;
 
     @Autowired
     FileRepository fileRepository;
@@ -72,8 +78,8 @@ public class SharedItemsIT {
         userRepository.save(currentAuthenticatedUser);
         userRepository.save(sharingUser);
 
-        accessToken = jwtService.createAccessToken(currentAuthenticatedUser.getId(), currentAuthenticatedUser.getEmail()).getAccessToken();
-        sharingUserAccessToken = jwtService.createAccessToken(sharingUser.getId(), sharingUser.getEmail()).getAccessToken();
+        accessToken = jwtAccessService.create(currentAuthenticatedUser.getId(), currentAuthenticatedUser.getEmail());
+        sharingUserAccessToken = jwtAccessService.create(sharingUser.getId(), sharingUser.getEmail());
     }
 
     @Test
@@ -97,6 +103,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sharedItems")
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(sharedItemRequestJson)
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());
@@ -131,6 +138,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sharedItems")
                 .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
                 .content(sharedItemRequestJson)
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());
@@ -152,7 +160,8 @@ public class SharedItemsIT {
         sharedItemRepository.save(sharedItem);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + folder.getId())
-                        .header("Authorization", "Bearer " + sharingUserAccessToken)
+                .with(csrf())
+                .header("Authorization", "Bearer " + sharingUserAccessToken)
         ).andExpect(status().isOk());
 
     }
@@ -171,6 +180,7 @@ public class SharedItemsIT {
         sharedItemRepository.save(sharedItem);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/folders/open/" + nestedFolder.getId())
+                .with(csrf())
                 .header("Authorization", "Bearer " + sharingUserAccessToken)
         ).andExpect(status().isOk());
     }
@@ -188,6 +198,7 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders
                 .patch("/api/items/move/" + sharedFolder.getId())
+                .with(csrf())
                 .header("Authorization", "Bearer " + sharingUserAccessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(moveItemRequest))
@@ -216,6 +227,7 @@ public class SharedItemsIT {
         mockMvc.perform(MockMvcRequestBuilders.put("/api/sharedItems/" + sharedItem.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(sharedItemRequest))
+                .with(csrf())
                 .header("Authorization", "Bearer " + accessToken)
         ).andExpect(status().isNoContent());
 
@@ -238,10 +250,37 @@ public class SharedItemsIT {
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/sharedItems/" + sharedItem.getId())
                 .header("Authorization", "Bearer " + accessToken)
+                .with(csrf())
         ).andExpect(status().isNoContent());
 
         List<SharedItem> sharedItemList = sharedItemRepository.findAll();
 
         assertThat(sharedItemList.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void testIfSharedItemsUserCanBeReturned(){
+
+        Item item = Item.builder().owner(sharingUser).build();
+
+        itemRepository.save(item);
+
+        SharedItem sharedItem = SharedItem.builder()
+                .item(item)
+                .user(currentAuthenticatedUser)
+                .owner(sharingUser)
+                .build();
+
+        sharedItemRepository.save(sharedItem);
+
+        List<SharedItem> ownerList = sharedItemRepository.getAllSharingItems(sharingUser.getId());
+        List<SharedItem> userList = sharedItemRepository.getAllSharingItems(currentAuthenticatedUser.getId());
+
+        assertThat(userList.size()).isEqualTo(1);
+        assertThat(ownerList.size()).isEqualTo(1);
+
+        assertThat(userList.getFirst().getOwner().getId()).isEqualTo(sharingUser.getId());
+        assertThat(ownerList.getFirst().getUser().getId()).isEqualTo(currentAuthenticatedUser.getId());
+
     }
 }

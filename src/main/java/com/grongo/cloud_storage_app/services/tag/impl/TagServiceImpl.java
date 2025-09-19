@@ -8,16 +8,20 @@ import com.grongo.cloud_storage_app.models.items.Item;
 import com.grongo.cloud_storage_app.models.tag.Tag;
 import com.grongo.cloud_storage_app.models.tag.TagJoin;
 import com.grongo.cloud_storage_app.models.tag.dtos.TagCreationDto;
+import com.grongo.cloud_storage_app.models.tag.dtos.TagDto;
 import com.grongo.cloud_storage_app.models.user.User;
 import com.grongo.cloud_storage_app.repositories.ItemRepository;
 import com.grongo.cloud_storage_app.repositories.JoinTagRepository;
 import com.grongo.cloud_storage_app.repositories.TagRepository;
 import com.grongo.cloud_storage_app.services.auth.AuthService;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.FileChecker;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
 import com.grongo.cloud_storage_app.services.tag.TagService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.ModelMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,9 +35,11 @@ public class TagServiceImpl implements TagService {
     private final ItemRepository itemRepository;
     private final JoinTagRepository joinTagRepository;
     private final StorageService storageService;
+    private final ModelMapper modelMapper;
+    private final FileChecker fileChecker;
 
     @Override
-    public void createTag(TagCreationDto tagCreationDto) {
+    public TagDto createTag(TagCreationDto tagCreationDto) {
         User authenticatedUser = authService.getCurrentAuthenticatedUser();
         List<Tag> tagList = tagRepository.findByNameAndUserId(tagCreationDto.getName(), authenticatedUser.getId());
         if (!tagList.isEmpty()) throw new TagConflictException("User already has a tag named " + tagCreationDto.getName());
@@ -42,9 +48,12 @@ public class TagServiceImpl implements TagService {
                 .name(tagCreationDto.getName())
                 .hex_color(tagCreationDto.getHex_color())
                 .user(authenticatedUser)
+                .description(tagCreationDto.getDescription())
                 .build();
 
         tagRepository.save(tag);
+
+        return modelMapper.map(tag, TagDto.class);
     }
 
     @Override
@@ -62,11 +71,14 @@ public class TagServiceImpl implements TagService {
 
     @Override
     public void bindTagToFile(Long tagId, Long itemId) {
+        User auth = authService.getCurrentAuthenticatedUser();
         Tag tag = findById(tagId);
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
         Optional<TagJoin> foundTagJoin = joinTagRepository.findByItemIdAndTagId(itemId, tagId);
         if (foundTagJoin.isPresent()) throw new TagConflictException("The tag '" + tag.getName() + "' is already bound to the item " + item.getPath());
+
+        fileChecker.checkItemPermission(item, auth, FilePermission.UPDATE);
 
         TagJoin tagJoin = TagJoin.builder()
                 .tag(tag)
@@ -84,13 +96,20 @@ public class TagServiceImpl implements TagService {
         Tag tag = findById(tagId);
         Item item = itemRepository.findById(itemId).orElseThrow(() -> new ItemNotFoundException("Could not find item with id of " + itemId));
 
-        storageService.checkItemPermission(item, authenticatedUser, FilePermission.UPDATE);
+        fileChecker.checkItemPermission(item, authenticatedUser, FilePermission.UPDATE);
 
         joinTagRepository.findByItemIdAndTagId(itemId, tagId)
                 .map(tagJoin -> {
                     joinTagRepository.delete(tagJoin);
                     return tagJoin;
                 });
+    }
+
+    @Override
+    public List<TagDto> getTags() {
+        User authenticated = authService.getCurrentAuthenticatedUser();
+        List<Tag> tagList = tagRepository.findByUserId(authenticated.getId());
+        return tagList.stream().map(tag -> modelMapper.map(tag, TagDto.class)).toList();
     }
 
     @Override

@@ -22,7 +22,7 @@ public class RegisterUser {
 
     @Valid
     @NotBlank
-    @Size(max = 50, min = 10, message = "The password must contain at least {min} and at most {max} characters.")
+    @Size(max = 40, min = 10, message = "The password must contain at least {min} and at most {max} characters.")
     private String password;
 
     @Valid
