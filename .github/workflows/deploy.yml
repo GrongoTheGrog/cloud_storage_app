@@ -31,7 +31,7 @@ jobs:
     
     - name: Push files to EC2
       run: |
-        rsync -avz -e "ssh -A ${{ secrets.EC2_BASTION_USER }}@${{ secrets.EC2_BASTION_HOST }}" --ignore-missing-args --delete ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app
+        rsync -avz -e "ssh -A -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -J ${{ secrets.EC2_BASTION_USER }}@${{ secrets.EC2_BASTION_HOST }}" --ignore-missing-args --delete ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app
 
     - name: Restart Nginx and App
       run: |
