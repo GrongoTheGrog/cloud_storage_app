@@ -20,7 +20,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.EC2_BASTION_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_BASTION_HOST }} >> ~/.ssh/known_hosts
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
     
     - name: Setup Backend Key
       run: | 
@@ -43,7 +43,7 @@ jobs:
       run: |
         ssh -A ${{ secrets.EC2_BASTION_USER }}@${{ secrets.EC2_BASTION_HOST }} << 'EOF'
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/{{ secrets.EC2_USER }}/app
+            cd /home/${{ secrets.EC2_USER }}/app
             mvn clean package
             java -jar target/cloud-storage-app-0.0.1-SNAPSHOT.jar &
           EOF
