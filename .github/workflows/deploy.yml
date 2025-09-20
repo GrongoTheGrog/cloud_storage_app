@@ -28,6 +28,7 @@ jobs:
         printf "%s" "${{ secrets.EC2_KEY }}" > backendkey.pem
         chmod 600 backendkey.pem
         ssh-add backendkey.pem
+        sleep 5
     
     - name: Push files to EC2
       run: |
