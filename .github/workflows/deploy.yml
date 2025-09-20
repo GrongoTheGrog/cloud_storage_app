@@ -18,14 +18,14 @@ jobs:
     - name: Setup Bastion Key
       run: |
         mkdir -p ~/.ssh
-        printf "%s" "${{ secrets.EC2_BASTION_KEY }}" > ~/.ssh/id_rsa
+        echo "${{ secrets.EC2_BASTION_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.EC2_BASTION_HOST }} >> ~/.ssh/known_hosts
     
     - name: Setup Backend Key
       run: | 
         eval "$(ssh-agent -s)"
-        printf "%s" "${{ secrets.EC2_KEY }}" > backendkey.pem
+        echo "${{ secrets.EC2_KEY }}" > backendkey.pem
         chmod 600 backendkey.pem
         ssh-add backendkey.pem
         sleep 5
