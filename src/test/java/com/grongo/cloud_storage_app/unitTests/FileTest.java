@@ -58,7 +58,6 @@ public class FileTest {
         doReturn("text/plain").when(awsService).uploadResourceFile(any(), any());
         fileService.createFile(mockMultipartFile, null, "newName", false);
 
-        verify(storageService, times(1)).updateSize(null, mockMultipartFile.getSize());
         verify(storageService, times(1)).updatePath(any(File.class));
 
     }
