@@ -10,6 +10,7 @@ import com.grongo.cloud_storage_app.repositories.FileRepository;
 import com.grongo.cloud_storage_app.repositories.FolderRepository;
 import com.grongo.cloud_storage_app.repositories.UserRepository;
 import com.grongo.cloud_storage_app.services.items.StorageService;
+import com.grongo.cloud_storage_app.services.items.impl.FileChecker;
 import com.grongo.cloud_storage_app.services.jwt.JwtAccessService;
 import com.grongo.cloud_storage_app.services.jwt.JwtRefreshService;
 import com.grongo.cloud_storage_app.services.sharedItems.FilePermission;
@@ -55,6 +56,8 @@ public class FileIT {
     JwtRefreshService jwtRefreshService;
     @Autowired
     FolderRepository folderRepository;
+    @Autowired
+    FileChecker fileChecker;
 
     private String accessToken;
     private User currentAuthenticatedUser;
@@ -139,7 +142,7 @@ public class FileIT {
         file.setIsPublic(true);
         fileRepository.save(file);
 
-        storageService.checkItemPermission(file, currentAuthenticatedUser, FilePermission.VIEW);
+        fileChecker.checkItemPermission(file, currentAuthenticatedUser, FilePermission.VIEW);
     }
 
 
