@@ -12,13 +12,6 @@ jobs:
 
     steps:
 
-    - name: Debug region
-      run: echo "Region is ${{ secrets.AWS_REGION }}"
-
-    - name: Debug private
-      run: echo "Region is ${{ secrets.SECRET_KEY }}"
-
-    
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v3
       with:
