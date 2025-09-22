@@ -15,24 +15,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       
-    - name: Setup Bastion Key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_BASTION_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-    
     - name: Push files to EC2
       run: |
-        eval "$(ssh-agent -s)"
-        printf "%s" "${{ secrets.EC2_KEY }}" > backendkey.pem
-        chmod 600 backendkey.pem
-        ssh-add backendkey.pem
-        ssh-add -l
-        rsync -avz \
-          -e "ssh -A -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -J ${{ secrets.EC2_BASTION_USER }}@${{ secrets.EC2_BASTION_HOST }}" \
-          --ignore-missing-args --delete ./ \
-          ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app
+        ssh -A ${{ secrets.EC2_BASTION_USER }}@${{ secrets.EC2_BASTION_HOST }} << 'EOF'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/${{ secrets.EC2_USER }}/app
+            git push origin main
+            mvn clean package
+            java -jar target/cloud-storage-app-0.0.1-SNAPSHOT.jar &
+          EOF
+        EOF
 
 
 
