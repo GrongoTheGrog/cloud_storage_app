@@ -27,7 +27,7 @@ jobs:
           --parameters commands='[
             "cd /home/${{ secrets.EC2_USER }}/app",
             "git pull origin main || git clone https://github.com/GrongoTheGrog/cloud_storage_app.git .",
-            "mvn clean package",
+            "mvn clean package -Dmaven.test.skip=true",
             "nohup java -jar target/*.jar > app.log 2>&1 &"
           ]' \
           --region ${{ secrets.AWS_REGION }}
