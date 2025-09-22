@@ -17,7 +17,13 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
         aws-access-key-id: ${{ secrets.ACCESS_KEY }}
         aws-secret-access-key: ${{ secrets.SECRET_KEY }}
-      
+
+
+    - name: Debug region
+      run: echo "Region is ${{ secrets.AWS_REGION }}"
+
+    - name: Debug private
+      run: echo "Region is ${{ secrets.SECRET_KEY }}"
 
     - name: Deploy via SSM
       run: |
