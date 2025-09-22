@@ -24,7 +24,7 @@ jobs:
         aws ssm send-command \
           --document-name "AWS-RunShellScript" \
           --targets "Key=tag:name,Values=root-backend-instance" \
-          --parameters 'commands=[
+          --parameters commands='[
             "cd /home/${{ secrets.EC2_USER }}/app",
             "git pull origin main || git clone https://github.com/GrongoTheGrog/cloud_storage_app.git .",
             "mvn clean package",
