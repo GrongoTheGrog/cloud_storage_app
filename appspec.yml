@@ -14,8 +14,3 @@ hooks:
     - location: scripts/deploy_app.sh
       timeout: 300
       runas: ec2-user
-
-  ApplicationStop:
-    - location: scripts/stop_app.sh
-      timeout: 300
-      runas: ec2-user
