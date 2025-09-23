@@ -4,7 +4,6 @@ files:
   - source: /
     destination: /home/ec2-user/app
 hooks:
-
   AfterInstall:
     - location: scripts/build_app.sh
       timeout: 300
