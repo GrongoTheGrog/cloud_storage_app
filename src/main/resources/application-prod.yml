@@ -1,0 +1,42 @@
+spring:
+  datasource:
+    url: database-1.cwpo6ys8qnku.us-east-1.rds.amazonaws.com
+    username: admin
+    password: bruno0707
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 1098974363773-1j3f2c6p3372bdr90go6mvq4fv6tq7ca.apps.googleusercontent.com
+            client-secret: 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
+            scopes: openid, profile, email
+          github:
+            client-id: Ov23liOEtpBXRiHW70oH
+            client-secret: 69592d9c629b218bb2fe1a3d6b3076201364f734
+            scopes: openid, profile, email
+
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.security.web.FilterChainProxy: DEBUG
+
+server:
+  port: 8080
