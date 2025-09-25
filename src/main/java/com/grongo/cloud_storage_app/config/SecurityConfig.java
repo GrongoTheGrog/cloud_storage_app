@@ -47,12 +47,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
                                 "/",
+                                "/api/oauth2/**",
                                 "/api/auth/**",
                                 "/oauth2/**",
                                 "/login/oauth2/code/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
+                                "/error/**",
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/webjars/**"
@@ -64,12 +66,16 @@ public class SecurityConfig {
             customizer
                     .requestMatchers(
                             "/",
+                            "/api/oauth2/code/**",
+                            "/api/oauth2/code/**",
                             "/api/auth/**",
+                            "/login",
                             "/oauth2/**",
                             "/login/oauth2/code/**",
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
                             "/swagger-ui.html",
+                            "/error/**",
                             "/swagger-ui/**",
                             "/swagger-resources/**",
                             "/webjars/**" )
@@ -80,7 +86,10 @@ public class SecurityConfig {
                 .oauth2Login(config -> config
                         .successHandler(successHandler)
                         .authorizationEndpoint(auth -> auth
-                                .baseUri("/api/auth/login")
+                                .baseUri("/api/oauth2/login")
+                        )
+                        .redirectionEndpoint(auth -> auth
+                                .baseUri("/api/oauth2/code/**")
                         )
                 )
                 .addFilterBefore(jwtFilterCheck, UsernamePasswordAuthenticationFilter.class)
