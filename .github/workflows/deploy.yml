@@ -73,5 +73,5 @@ jobs:
         ssh target << 'EOF'
           cd /home/${{ secrets.EC2_USER }}/app
           fuser -k 8080/tcp || true
-          java -jar target/cloud-storage-app-0.0.1-SNAPSHOT.jar
+          java -jar target/cloud-storage-app-0.0.1-SNAPSHOT.jar &
         EOF
