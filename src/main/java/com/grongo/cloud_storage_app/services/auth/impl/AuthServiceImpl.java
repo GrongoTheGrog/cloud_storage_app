@@ -2,6 +2,7 @@ package com.grongo.cloud_storage_app.services.auth.impl;
 
 import com.grongo.cloud_storage_app.exceptions.auth.AccessDeniedException;
 import com.grongo.cloud_storage_app.exceptions.resetCode.InvalidCodeException;
+import com.grongo.cloud_storage_app.exceptions.userExceptions.UserException;
 import com.grongo.cloud_storage_app.exceptions.userExceptions.UserNotFoundException;
 import com.grongo.cloud_storage_app.models.resetCode.ResetCodeMemory;
 import com.grongo.cloud_storage_app.models.user.User;
@@ -20,6 +21,7 @@ import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +29,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +46,9 @@ public class AuthServiceImpl implements AuthService {
 
     public UserDto createUserCredentials(RegisterUser registerUser){
         User user = modelMapper.map(registerUser, User.class);
+
+        Optional<User> duplicateUser = userRepository.findByEmail(user.getEmail());
+        if (duplicateUser.isPresent()) throw new UserException("There's already an user with that email.", HttpStatus.CONFLICT);
 
         if (user.getPassword() != null){
             String hashedPassword = passwordEncoder.encode(user.getPassword());
