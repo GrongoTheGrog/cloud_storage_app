@@ -53,6 +53,16 @@ jobs:
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts || true
         chmod 600 ~/.ssh/known_hosts|| true
 
+    - name: Set up Java 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+
+    - name: Install Maven 3.8+ (or latest)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y maven
+    
     - name: Build the app
       run: |
         mvn clean package -DskipTests
