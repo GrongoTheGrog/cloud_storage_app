@@ -30,7 +30,9 @@ public class AwsConfig {
 
     @Bean
     public S3Presigner S3presigner(){
-        return S3Presigner.create();
+        return S3Presigner.builder()
+                .region(Region.US_EAST_2)
+                .build();
     }
 
 }
