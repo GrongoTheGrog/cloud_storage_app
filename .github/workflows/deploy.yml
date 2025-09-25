@@ -71,6 +71,10 @@ jobs:
     - name: Start app
       run: |
         ssh target << 'EOF'
+          # setup the redis container
+          sudo docker stop redis || true
+          sudo docker start redis
+          
           cd /home/${{ secrets.EC2_USER }}/app
           fuser -k 8080/tcp || true
           export JWT_SECRET=${{ secrets.JWT_SECRET }}
