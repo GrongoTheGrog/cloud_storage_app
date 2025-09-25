@@ -74,6 +74,6 @@ jobs:
           cd /home/${{ secrets.EC2_USER }}/app
           fuser -k 8080/tcp || true
           export JWT_SECRET=${{ secrets.JWT_SECRET }}
-          export SPRING_PROFILE_ACTIVE=prod
+          export SPRING_PROFILES_ACTIVE=prod
           java -jar cloud-storage-app-0.0.1-SNAPSHOT.jar &
         EOF
