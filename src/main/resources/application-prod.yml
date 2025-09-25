@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: database-1.cwpo6ys8qnku.us-east-1.rds.amazonaws.com
+    url: jdbc:mysql://database-1.cwpo6ys8qnku.us-east-1.rds.amazonaws.com:3306/cloud_storage_app
     username: admin
     password: bruno0707
 
@@ -39,4 +39,5 @@ logging:
     org.springframework.security.web.FilterChainProxy: DEBUG
 
 server:
+  address: 0.0.0.0
   port: 8080
