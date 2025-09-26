@@ -66,7 +66,7 @@ jobs:
         
     - name: Rsync files via Bastion
       run: |
-        rsync -avz ./target/ target:/home/${{ secrets.EC2_USER }}/app/
+        rsync -avz ./target/ target:/home/${{ secrets.EC2_USER }}/home/ec2-user/app/
 
     - name: Start app
       run: |
